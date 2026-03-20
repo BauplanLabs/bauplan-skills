@@ -17,6 +17,16 @@ This pattern is formally known as Write-Audit-Publish (WAP) in the Iceberg ecosy
 
 Implement this as a Python script using the `bauplan` SDK. Do NOT use CLI commands for the ingestion itself.
 
+## Environment Setup
+
+Before writing the script, check whether the project uses `uv` (look for `pyproject.toml` or `uv.lock`). If so, use `uv run python` to execute scripts and `uv add` to install packages. Otherwise, use the system `python` and `pip install`.
+
+Ensure the required packages are installed:
+- `bauplan` (the Bauplan Python SDK — required)
+- `polars` (if validation logic needs DataFrame operations — zero-copy Arrow interop)
+
+**Do not use pandas.** Bauplan's `client.query()` returns a PyArrow table directly — you can access columns with `result.column("name")[0].as_py()` or convert to Polars with `pl.from_arrow(result)`. No `.to_arrow()` call is needed. Pandas requires a full data copy and is slower.
+
 **The three phases:**
 1. **Import** — load data onto a temporary branch (never `main`)
 2. **Validate** — run quality checks before publishing
@@ -197,11 +207,9 @@ if __name__ == "__main__":
 | `client.delete_branch(name)`                   | Delete a branch                                       |
 | `client.create_table(table, search_uri, ...)`  | Create table with schema inferred from S3             |
 | `client.import_data(table, search_uri, ...)`   | Import data from S3 into table                        |
-| `client.query(query, ref)`                     | Run SQL query, returns PyArrow Table                  |
+| `client.query(query, ref)`                     | Run SQL query, returns a PyArrow Table directly       |
 | `client.merge_branch(source_ref, into_branch)` | Merge branch into target                              |
 | `client.has_table(table, ref, namespace)`      | Check if table exists on branch                       |
-
-> **SDK Reference**: For detailed method signatures, check https://docs.bauplanlabs.com/reference/bauplan
 
 ## Workflow Checklist
 
@@ -275,3 +283,15 @@ bauplan branch rm <branch_name>  # optional cleanup
 ```
 
 The branch name is printed by the script upon completion.
+
+---
+
+## Reference
+
+When unsure about a method signature or CLI flag, look it up before guessing.
+
+**Python SDK:** For detailed method signatures, check https://docs.bauplanlabs.com/reference/bauplan — or use `WebFetch` to pull the page directly.
+
+**CLI:** The `bauplan` CLI is self-documenting:
+- `bauplan --help` — lists all available commands
+- `bauplan <command> --help` — shows arguments and options for a specific command (e.g., `bauplan branch --help`, `bauplan import-data --help`)

@@ -20,6 +20,16 @@ If the user's request requires writing data, stop and suggest switching to the a
 
 Use the Bauplan Python SDK for all data operations. Create a working folder called `data-assessment` and iterate on a Python file named `data_assessment.py` inside it.
 
+## Environment Setup
+
+Before writing any Python, check whether the project uses `uv` (look for `pyproject.toml` or `uv.lock`). If so, use `uv run python` to execute scripts and `uv add` to install packages. Otherwise, use the system `python` and `pip install`.
+
+Ensure the required packages are installed:
+- `bauplan` (the Bauplan Python SDK — required)
+- `polars` (preferred for DataFrame operations — zero-copy Arrow interop)
+
+**Do not use pandas.** Bauplan's `client.query()` returns a PyArrow table directly. Polars reads Arrow natively with zero-copy (`pl.from_arrow(table)`). Pandas requires a full data copy and is slower and more memory-intensive.
+
 ## When to Use This Skill
 
 Use this skill when:
@@ -783,7 +793,17 @@ Gate: all usable. Proceed.
 | `client.get_tables(ref=, filter_by_namespace=)` | List tables in a namespace           |
 | `client.get_table(table=, namespace=, ref=)`    | Get table schema and metadata        |
 | `client.has_table(table=, ref=, namespace=)`    | Check if table exists                |
-| `client.query(query=, ref=, max_rows=)`         | Run SQL query, returns PyArrow Table |
+| `client.query(query=, ref=, max_rows=)`         | Run SQL query, returns a PyArrow Table directly |
 | `client.get_namespaces(ref=)`                   | List namespaces on a ref             |
 
-> **SDK Reference**: For detailed method signatures, check https://docs.bauplanlabs.com/reference/bauplan
+---
+
+## Reference
+
+When unsure about a method signature or CLI flag, look it up before guessing.
+
+**Python SDK:** For detailed method signatures, check https://docs.bauplanlabs.com/reference/bauplan — or use `WebFetch` to pull the page directly.
+
+**CLI:** The `bauplan` CLI is self-documenting:
+- `bauplan --help` — lists all available commands
+- `bauplan <command> --help` — shows arguments and options for a specific command (e.g., `bauplan query --help`, `bauplan branch --help`)

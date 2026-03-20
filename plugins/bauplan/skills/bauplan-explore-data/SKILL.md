@@ -20,6 +20,16 @@ If the user asks for any write operation, stop and suggest switching to a write-
 
 Ask the user which branch or ref to explore. All reads must be scoped to an explicit ref. Never rely on implicit defaults.
 
+## Environment Setup
+
+Before writing any Python, check whether the project uses `uv` (look for `pyproject.toml` or `uv.lock`). If so, use `uv run python` to execute scripts and `uv add` to install packages. Otherwise, use the system `python` and `pip install`.
+
+Ensure the required packages are installed:
+- `bauplan` (the Bauplan Python SDK — required)
+- `polars` (preferred for DataFrame operations — zero-copy Arrow interop)
+
+**Do not use pandas.** Bauplan's `client.query()` returns a PyArrow table directly. Polars reads Arrow natively with zero-copy (`pl.from_arrow(table)`). Pandas requires a full data copy and is slower and more memory-intensive.
+
 ## Required Deliverables
 
 Every exploration MUST produce a `summary.md` file in the project root. This file is written in Phase 4. If you reach the end of Phase 3, you MUST proceed to Phase 4 and write `summary.md`. Do not end the conversation after Phase 3. The exploration is incomplete without `summary.md`.
@@ -102,7 +112,8 @@ res = client.query("""
     FROM bauplan.my_table
     LIMIT 20
 """, ref=ref, max_rows=20)
-df = pl.from_arrow(res.to_arrow())
+# client.query() returns a PyArrow table directly — no .to_arrow() needed
+df = pl.from_arrow(res)
 print(df)
 ```
 
@@ -360,3 +371,15 @@ The exploration produces two artifacts:
 2. **`summary.md`** — structured summary of all findings, written in Phase 4.
 
 Both live in the project root.
+
+---
+
+## Reference
+
+When unsure about a method signature or CLI flag, look it up before guessing.
+
+**Python SDK:** For detailed method signatures, check https://docs.bauplanlabs.com/reference/bauplan — or use `WebFetch` to pull the page directly.
+
+**CLI:** The `bauplan` CLI is self-documenting:
+- `bauplan --help` — lists all available commands
+- `bauplan <command> --help` — shows arguments and options for a specific command (e.g., `bauplan query --help`, `bauplan table --help`)

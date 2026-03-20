@@ -76,7 +76,7 @@ The skill produces three types of reports in `debug/`: a job report, data snapsh
 3. **NEVER query a moving ref** — always target `branch@commit_hash` or a tag.
 4. **NEVER rerun before inspecting** — understand the failure, then act.
 5. **NEVER clean up debug branches** unless the user explicitly asks.
-6. **NEVER guess CLI flags.** Before running any `bauplan` CLI command, verify the exact flag names against the CLI reference doc in the project. If unsure about a flag, check first.
+6. **NEVER guess CLI flags.** Before running any `bauplan` CLI command, verify the exact flag names by running `bauplan <command> --help`. If unsure about a flag, check first.
 7. **NEVER create files outside `debug/` and the pipeline project directory.** No top-level documentation, no READMEs, no schema guides. Your outputs are: the `debug/` report files and edits to existing pipeline code. Nothing else.
 8. **NEVER write Python scripts for diagnosis.** Steps 0–3 (evidence collection and root cause analysis) use `bauplan` CLI commands exclusively. The only Python you write is pipeline code fixes (models, project config).
 9. **NEVER branch from the current checkout or a previous debug session.** The debug branch must be created from the failing job's own ref (`job_branch@job_commit` from Step 1). If you branch from anywhere else, you will investigate the wrong data and reach wrong conclusions.
@@ -94,7 +94,7 @@ If any rule cannot be satisfied, **STOP** and report the blocker.
 
 ### Step 0 — Setup
 
-**Bauplan:** Run `bauplan info` to confirm connectivity and get your username (needed for branch naming in Step 2). Do not create any branches yet.
+**Bauplan:** Run `bauplan info` to confirm connectivity and get your username (needed for branch naming in Step 2). If the project uses `uv` (look for `pyproject.toml` or `uv.lock`), use `uv run bauplan` for CLI commands. Ensure `bauplan` is installed. Do not create any branches yet.
 
 **Git:** Check whether `.git` exists. Note the result — you will need it in Step 4 when code changes begin. Do not create any Git branches yet.
 
@@ -119,7 +119,7 @@ mkdir -p debug/{job,data_snapshot}
 
 - If `job get` does not show the commit hash directly, find it by listing commits on the job's branch:
   ```bash
-  bauplan commit --ref <job_branch> --limit 10
+  bauplan commit <job_branch> --max-count 10
   ```
   Match by timestamp against the job's created/finished time → extract `commit_hash`.
 
@@ -373,3 +373,15 @@ Git debug branch: <git_branch or "unversioned">
 ```
 
 Do not produce any other files. The fix itself lives in Git commits to pipeline code. The reports live in `debug/`. That is the complete output.
+
+---
+
+## Reference
+
+When unsure about a method signature or CLI flag, look it up before guessing.
+
+**Python SDK:** For detailed method signatures, check https://docs.bauplanlabs.com/reference/bauplan — or use `WebFetch` to pull the page directly.
+
+**CLI:** The `bauplan` CLI is self-documenting:
+- `bauplan --help` — lists all available commands
+- `bauplan <command> --help` — shows arguments and options for a specific command (e.g., `bauplan job --help`, `bauplan run --help`, `bauplan branch --help`)

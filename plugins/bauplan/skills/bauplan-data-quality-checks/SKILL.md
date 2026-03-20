@@ -36,6 +36,16 @@ If the skill is invoked without enough information, ask for what's missing. But 
 
 Branch naming convention: `<username>.<branch_name>`. Get your username with `bauplan info`.
 
+## Environment Setup
+
+Before writing any Python, check whether the project uses `uv` (look for `pyproject.toml` or `uv.lock`). If so, use `uv run python` to execute scripts and `uv add` to install packages. Otherwise, use the system `python` and `pip install`.
+
+Ensure the required packages are installed:
+- `bauplan` (the Bauplan Python SDK — required)
+- `polars` (if custom expectations need DataFrame operations — zero-copy Arrow interop)
+
+**Do not use pandas.** Bauplan's `client.query()` returns a PyArrow table directly — no `.to_arrow()` call needed. In pipeline expectations, model inputs arrive as Arrow tables too. Polars reads Arrow natively with zero-copy (`pl.from_arrow(table)`). Pandas requires a full data copy and is slower.
+
 ---
 
 ## Writing Effective Checks
@@ -431,3 +441,17 @@ result = client.query(
     ref=branch
 )
 ```
+
+---
+
+## Reference
+
+When unsure about a method signature or CLI flag, look it up before guessing.
+
+**Python SDK:** For detailed method signatures, check https://docs.bauplanlabs.com/reference/bauplan — or use `WebFetch` to pull the page directly.
+
+**Standard expectations:** For the full list of built-in expectations, check https://docs.bauplanlabs.com/reference/bauplan_standard_expectations
+
+**CLI:** The `bauplan` CLI is self-documenting:
+- `bauplan --help` — lists all available commands
+- `bauplan <command> --help` — shows arguments and options for a specific command (e.g., `bauplan run --help`, `bauplan job --help`)

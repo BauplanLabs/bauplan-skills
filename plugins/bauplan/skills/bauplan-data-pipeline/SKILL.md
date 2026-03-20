@@ -21,6 +21,12 @@ This skill guides you through creating a new bauplan data pipeline project from 
 
 Branch naming convention: `<username>.<branch_name>` (e.g., `john.feature-pipeline`). Get your username by running `bauplan info`.
 
+## Environment Setup
+
+Before writing pipeline code, check whether the project uses `uv` (look for `pyproject.toml` or `uv.lock`). If so, use `uv run` to execute commands and `uv add` to install packages. Otherwise, use `pip install`.
+
+Ensure `bauplan` is installed — it provides both the SDK and the `bauplan` CLI. Verify with `bauplan info`. Models declare their own runtime dependencies via `@bauplan.python('3.11', pip={...})`, but the local environment needs `bauplan` to run `bauplan run`.
+
 ## Table References
 - Source tables must already exist in the bauplan lakehouse before building a pipeline.
 - Verify source tables exist and understand their schema before writing any code.
@@ -120,12 +126,12 @@ Use `columns` and `filter` in `bauplan.Model()` to restrict the data read at the
 See [examples.md](examples.md#io-pushdown-with-column-selection-and-filtering) for a complete guide.
 
 #### Use Polars or DuckDB, Not Pandas
-Use Polars or DuckDB for data processing inside Python models. Avoid Pandas. Bauplan models receive and return Apache Arrow tables. Polars and DuckDB operate natively on Arrow with zero-copy reads and multi-threaded execution. Pandas requires a full data copy into its own format — slower, single-threaded, and uses significantly more memory.
+Use Polars or DuckDB for data processing inside Python models. **Do not use Pandas.** Bauplan models receive and return Apache Arrow tables. Polars and DuckDB operate natively on Arrow with zero-copy reads and multi-threaded execution. Pandas requires a full data copy into its own format — slower, single-threaded, and uses significantly more memory.
 
-- **Polars**: best for DataFrame-style transformations (filter, join, group_by, with_columns).
-- **DuckDB**: best when the logic is naturally expressed as SQL (complex joins, aggregations).
+- **Polars**: best for DataFrame-style transformations (filter, join, group_by, with_columns). Convert with `pl.from_arrow(data)` on input, `result.to_arrow()` on output.
+- **DuckDB**: best when the logic is naturally expressed as SQL (complex joins, aggregations). Register the Arrow table directly with `con.register("name", data)`.
 
-All four patterns are demonstrated in the [Base Python Model](#base-python-model) above.
+Note: `client.query()` in the SDK returns a PyArrow table directly — no `.to_arrow()` needed. Inside models, the `data` parameter is also already an Arrow table. The only place you call `.to_arrow()` is when converting a Polars DataFrame back to Arrow for the model return value.
 
 ## Project Structure
 
@@ -222,3 +228,17 @@ See [examples.md](examples.md) for:
 - DuckDB queries in Python models
 - Data quality expectations
 - Multi-stage pipelines
+
+---
+
+## Reference
+
+When unsure about a method signature or CLI flag, look it up before guessing.
+
+**Python SDK:** For detailed method signatures, check https://docs.bauplanlabs.com/reference/bauplan — or use `WebFetch` to pull the page directly.
+
+**Standard expectations:** For the full list of built-in expectations, check https://docs.bauplanlabs.com/reference/bauplan_standard_expectations
+
+**CLI:** The `bauplan` CLI is self-documenting:
+- `bauplan --help` — lists all available commands
+- `bauplan <command> --help` — shows arguments and options for a specific command (e.g., `bauplan run --help`, `bauplan table --help`)
