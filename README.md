@@ -14,6 +14,8 @@ Install the plugin for the skills, and copy or integrate the `CLAUDE.md` into yo
 /plugin marketplace add https://github.com/BauplanLabs/bauplan-skills
 ```
 
+Restart Claude Code to make sure the changes are visible.
+
 2. Open the plugin installer:
 ```
 /plugin
