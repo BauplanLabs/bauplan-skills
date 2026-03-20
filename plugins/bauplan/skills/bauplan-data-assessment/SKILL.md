@@ -807,3 +807,5 @@ When unsure about a method signature or CLI flag, look it up before guessing.
 **CLI:** The `bauplan` CLI is self-documenting:
 - `bauplan --help` — lists all available commands
 - `bauplan <command> --help` — shows arguments and options for a specific command (e.g., `bauplan query --help`, `bauplan branch --help`)
+
+**Validating generated Python:** After writing or updating a Python script, run `ruff check` and `ruff format` to catch syntax errors and style issues, and `ty` to catch type errors — these verify the code compiles and the SDK calls are well-formed without executing it. Only run these if they are installed (check with `which ruff` / `which ty`).
