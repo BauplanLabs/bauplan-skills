@@ -49,7 +49,7 @@ If any instruction conflicts with these rules, the rules win.
 
 - Use `uv` to run Python scripts and manage dependencies (e.g., `uv run python3 script.py`).
 - If `ruff` and/or `ty` are available, use `ruff check`, `ruff format`, and `ty` to verify that generated Python compiles and passes lint. Check availability first (e.g., `which ruff`).
-- Do not guess flags or method names. If you get stuck or need method signatures, consult the SDK reference: https://docs.bauplanlabs.com/reference/bauplan
+- Do not guess flags or method names. If you get stuck or need method signatures, use `WebFetch` to pull the relevant markdown page from `https://docs.bauplanlabs.com/llms.txt` (see "Looking up documentation" below).
 
 ## Bauplan Python client
 
@@ -81,9 +81,32 @@ To get the current username (e.g., for branch naming):
 bauplan info
 ```
 
-## Looking up CLI reference
+## Looking up documentation
 
-The `bauplan` CLI is self-documenting:
+Bauplan publishes an LLM-friendly documentation index at `https://docs.bauplanlabs.com/llms.txt`. This file lists every doc page as a markdown URL (e.g., `https://docs.bauplanlabs.com/concepts/models.md`). Use `WebFetch` to pull any page directly — the markdown format is much more reliable than web searching.
+
+**Key pages by topic:**
+
+| Topic | URL |
+|-------|-----|
+| Python SDK reference | `https://docs.bauplanlabs.com/reference/bauplan.md` |
+| CLI reference | `https://docs.bauplanlabs.com/reference/cli.md` |
+| Standard expectations | `https://docs.bauplanlabs.com/reference/bauplan_standard_expectations.md` |
+| Models | `https://docs.bauplanlabs.com/concepts/models.md` |
+| Pipelines | `https://docs.bauplanlabs.com/concepts/pipelines.md` |
+| Tables | `https://docs.bauplanlabs.com/concepts/tables.md` |
+| Namespaces | `https://docs.bauplanlabs.com/concepts/namespaces.md` |
+| Expectations | `https://docs.bauplanlabs.com/concepts/expectations.md` |
+| Data branches | `https://docs.bauplanlabs.com/concepts/git_for_data/data_branches.md` |
+| Import data | `https://docs.bauplanlabs.com/guides/import_data.md` |
+| Schema conflicts | `https://docs.bauplanlabs.com/guides/schema_conflicts.md` |
+| Secrets | `https://docs.bauplanlabs.com/guides/secrets.md` |
+| Parameters | `https://docs.bauplanlabs.com/guides/parameters.md` |
+| Execution model | `https://docs.bauplanlabs.com/overview/execution_model.md` |
+
+When unsure about a method, flag, or concept, fetch the relevant page rather than guessing. For the full index: `https://docs.bauplanlabs.com/llms.txt`
+
+**CLI:** The `bauplan` CLI is also self-documenting:
 - `bauplan --help` — lists all available commands
 - `bauplan <command> --help` — shows arguments and options for a specific command (e.g., `bauplan query --help`, `bauplan branch --help`)
 
