@@ -288,9 +288,19 @@ The branch name is printed by the script upon completion.
 
 ## Reference
 
-When unsure about a method signature or CLI flag, look it up before guessing.
+When unsure about a method signature, CLI flag, or concept, fetch the relevant doc page via `WebFetch` rather than guessing. Pages are markdown and LLM-friendly.
 
-**Python SDK:** For detailed method signatures, check https://docs.bauplanlabs.com/reference/bauplan — or use `WebFetch` to pull the page directly.
+**Python SDK:** `https://docs.bauplanlabs.com/reference/bauplan.md`
+
+**Relevant guides and concept pages:**
+- Import data: `https://docs.bauplanlabs.com/guides/import_data.md`
+- Schema conflicts: `https://docs.bauplanlabs.com/guides/schema_conflicts.md`
+- Handle casting programmatically: `https://docs.bauplanlabs.com/guides/casting.md`
+- Data branches: `https://docs.bauplanlabs.com/concepts/git_for_data/data_branches.md`
+- Tables: `https://docs.bauplanlabs.com/concepts/tables.md`
+- Namespaces: `https://docs.bauplanlabs.com/concepts/namespaces.md`
+
+**Full doc index:** `https://docs.bauplanlabs.com/llms.txt`
 
 **CLI:** The `bauplan` CLI is self-documenting:
 - `bauplan --help` — lists all available commands

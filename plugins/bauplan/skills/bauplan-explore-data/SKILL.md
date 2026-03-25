@@ -376,9 +376,16 @@ Both live in the project root.
 
 ## Reference
 
-When unsure about a method signature or CLI flag, look it up before guessing.
+When unsure about a method signature, CLI flag, or concept, fetch the relevant doc page via `WebFetch` rather than guessing. Pages are markdown and LLM-friendly.
 
-**Python SDK:** For detailed method signatures, check https://docs.bauplanlabs.com/reference/bauplan — or use `WebFetch` to pull the page directly.
+**Python SDK:** `https://docs.bauplanlabs.com/reference/bauplan.md`
+
+**Relevant concept pages:**
+- Tables: `https://docs.bauplanlabs.com/concepts/tables.md`
+- Namespaces: `https://docs.bauplanlabs.com/concepts/namespaces.md`
+- Data branches: `https://docs.bauplanlabs.com/concepts/git_for_data/data_branches.md`
+
+**Full doc index:** `https://docs.bauplanlabs.com/llms.txt`
 
 **CLI:** The `bauplan` CLI is self-documenting:
 - `bauplan --help` — lists all available commands
