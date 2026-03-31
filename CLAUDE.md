@@ -91,18 +91,18 @@ Bauplan publishes an LLM-friendly documentation index at `https://docs.bauplanla
 |-------|-----|
 | Python SDK reference | `https://docs.bauplanlabs.com/reference/bauplan.md` |
 | CLI reference | `https://docs.bauplanlabs.com/reference/cli.md` |
-| Standard expectations | `https://docs.bauplanlabs.com/reference/bauplan_standard_expectations.md` |
+| Standard expectations | `https://docs.bauplanlabs.com/reference/bauplan-standard-expectations.md` |
 | Models | `https://docs.bauplanlabs.com/concepts/models.md` |
 | Pipelines | `https://docs.bauplanlabs.com/concepts/pipelines.md` |
 | Tables | `https://docs.bauplanlabs.com/concepts/tables.md` |
 | Namespaces | `https://docs.bauplanlabs.com/concepts/namespaces.md` |
 | Expectations | `https://docs.bauplanlabs.com/concepts/expectations.md` |
-| Data branches | `https://docs.bauplanlabs.com/concepts/git_for_data/data_branches.md` |
-| Import data | `https://docs.bauplanlabs.com/guides/import_data.md` |
-| Schema conflicts | `https://docs.bauplanlabs.com/guides/schema_conflicts.md` |
-| Secrets | `https://docs.bauplanlabs.com/guides/secrets.md` |
-| Parameters | `https://docs.bauplanlabs.com/guides/parameters.md` |
-| Execution model | `https://docs.bauplanlabs.com/overview/execution_model.md` |
+| Data branches | `https://docs.bauplanlabs.com/concepts/git-for-data/data-branches.md` |
+| Import data | `https://docs.bauplanlabs.com/tutorial/03-import.md` |
+| Schema conflicts | `https://docs.bauplanlabs.com/concepts/schema-conflicts.md` |
+| Secrets | `https://docs.bauplanlabs.com/concepts/pipelines.md` |
+| Parameters | `https://docs.bauplanlabs.com/concepts/pipelines.md` |
+| Execution model | `https://docs.bauplanlabs.com/overview/execution-model.md` |
 
 When unsure about a method, flag, or concept, fetch the relevant page rather than guessing. For the full index: `https://docs.bauplanlabs.com/llms.txt`
 

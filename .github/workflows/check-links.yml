@@ -1,0 +1,38 @@
+name: Check Documentation Links
+on:
+  pull_request:
+    branches:
+      - main
+jobs:
+  check-links:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check docs.bauplanlabs.com links in markdown files
+        run: |-
+          set -euo pipefail
+          # Sentinel to track if any link is broken (i.e., unreachable)
+          failed=0
+
+          # Find all markdown files and extract docs URLs from each
+          while IFS= read -r file; do
+            while IFS= read -r url; do
+              # Strip trailing punctuation that grep picks up from prose, e.g. "https://docs.bauplanlabs.com/doc.md."
+              url="${url%%.}"
+              url="${url%%,}"
+
+              code=$(curl -s -o /dev/null -w "%{http_code}" \
+                -L --max-time 10 --retry 2 -A "bauplan-link-checker" "$url")
+
+              # Treat 2xx and 3xx as healthy, everything else as broken
+              if [[ "$code" -lt 200 || "$code" -ge 400 ]]; then
+                echo "file=${file}|url=${url}|status=${code}"
+                failed=1
+              fi
+            # Extracts matching URLs only and prevents set -e from killing the script when a file contains no matches
+            done < <(grep -oE 'https://docs\.bauplanlabs\.com/[^][:space:]")>`]+' "$file" 2>/dev/null || true)
+          done < <(find . -name "*.md")
+
+          if [[ "$failed" -ne 0 ]]; then
+            exit 1
+          fi

@@ -383,7 +383,7 @@ When unsure about a method signature, CLI flag, or concept, fetch the relevant d
 **Relevant concept pages:**
 - Tables: `https://docs.bauplanlabs.com/concepts/tables.md`
 - Namespaces: `https://docs.bauplanlabs.com/concepts/namespaces.md`
-- Data branches: `https://docs.bauplanlabs.com/concepts/git_for_data/data_branches.md`
+- Data branches: `https://docs.bauplanlabs.com/concepts/git-for-data/data-branches.md`
 
 **Full doc index:** `https://docs.bauplanlabs.com/llms.txt`
 
