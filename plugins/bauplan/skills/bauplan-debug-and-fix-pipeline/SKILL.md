@@ -383,10 +383,10 @@ When unsure about a method signature, CLI flag, or concept, fetch the relevant d
 **Python SDK:** `https://docs.bauplanlabs.com/reference/bauplan.md`
 
 **Relevant concept pages:**
-- Execution model: `https://docs.bauplanlabs.com/overview/execution_model.md`
-- Transactional pipelines: `https://docs.bauplanlabs.com/concepts/git_for_data/transactional_pipelines.md`
-- Commits and refs: `https://docs.bauplanlabs.com/concepts/git_for_data/commits_refs.md`
-- Data branches: `https://docs.bauplanlabs.com/concepts/git_for_data/data_branches.md`
+- Execution model: `https://docs.bauplanlabs.com/overview/execution-model.md`
+- Transactional pipelines: `https://docs.bauplanlabs.com/concepts/git-for-data/transactional-pipelines.md`
+- Commits and refs: `https://docs.bauplanlabs.com/concepts/git-for-data/commits-refs.md`
+- Data branches: `https://docs.bauplanlabs.com/concepts/git-for-data/data-branches.md`
 
 **Full doc index:** `https://docs.bauplanlabs.com/llms.txt`
 
