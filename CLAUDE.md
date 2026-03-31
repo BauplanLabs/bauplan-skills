@@ -1,4 +1,4 @@
-# CLAUDE.md
+# Bauplan
 
 ## Git Workflow (code repo)
 
@@ -112,7 +112,7 @@ When unsure about a method, flag, or concept, fetch the relevant page rather tha
 
 ## Skills
 
-Skills whose names start with `bauplan-` contain use-case-specific instructions (e.g., building pipelines, ingesting data, debugging failed runs). Skills are auto-downloaded with the Claude Code plugin; when a relevant skill is available, follow its guidance for that workflow.
+Skills whose names start with `bauplan-` contain use-case-specific instructions (e.g., building pipelines, ingesting data, debugging failed runs); when a relevant skill is available, follow its guidance for that workflow.
 
 ## Authentication
 
