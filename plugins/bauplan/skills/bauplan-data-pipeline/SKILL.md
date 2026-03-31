@@ -236,15 +236,15 @@ See [examples.md](examples.md) for:
 When unsure about a method signature, CLI flag, or concept, fetch the relevant doc page via `WebFetch` rather than guessing. Pages are markdown and LLM-friendly.
 
 **Python SDK:** `https://docs.bauplanlabs.com/reference/bauplan.md`
-**Standard expectations:** `https://docs.bauplanlabs.com/reference/bauplan_standard_expectations.md`
+**Standard expectations:** `https://docs.bauplanlabs.com/reference/bauplan-standard-expectations.md`
 
 **Relevant concept pages:**
 - Models: `https://docs.bauplanlabs.com/concepts/models.md`
 - Pipelines: `https://docs.bauplanlabs.com/concepts/pipelines.md`
 - Projects: `https://docs.bauplanlabs.com/concepts/projects.md`
 - Expectations: `https://docs.bauplanlabs.com/concepts/expectations.md`
-- Execution model: `https://docs.bauplanlabs.com/overview/execution_model.md`
-- Parameters: `https://docs.bauplanlabs.com/guides/parameters.md`
+- Execution model: `https://docs.bauplanlabs.com/overview/execution-model.md`
+- Parameters: `https://docs.bauplanlabs.com/concepts/pipelines#parameters`
 
 **Full doc index:** `https://docs.bauplanlabs.com/llms.txt`
 

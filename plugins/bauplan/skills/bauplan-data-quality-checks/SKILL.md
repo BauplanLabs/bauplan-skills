@@ -449,11 +449,10 @@ result = client.query(
 When unsure about a method signature, CLI flag, or concept, fetch the relevant doc page via `WebFetch` rather than guessing. Pages are markdown and LLM-friendly.
 
 **Python SDK:** `https://docs.bauplanlabs.com/reference/bauplan.md`
-**Standard expectations:** `https://docs.bauplanlabs.com/reference/bauplan_standard_expectations.md`
+**Standard expectations:** `https://docs.bauplanlabs.com/reference/bauplan-standard-expectations.md`
 
 **Relevant concept pages:**
 - Expectations: `https://docs.bauplanlabs.com/concepts/expectations.md`
-- Data quality examples: `https://docs.bauplanlabs.com/examples/expectations.md`
 
 **Full doc index:** `https://docs.bauplanlabs.com/llms.txt`
 
