@@ -244,7 +244,7 @@ When unsure about a method signature, CLI flag, or concept, fetch the relevant d
 - Projects: `https://docs.bauplanlabs.com/concepts/projects.md`
 - Expectations: `https://docs.bauplanlabs.com/concepts/expectations.md`
 - Execution model: `https://docs.bauplanlabs.com/overview/execution-model.md`
-- Parameters: `https://docs.bauplanlabs.com/concepts/pipelines#parameters`
+- Parameters: `https://docs.bauplanlabs.com/concepts/pipelines.md`
 
 **Full doc index:** `https://docs.bauplanlabs.com/llms.txt`
 
