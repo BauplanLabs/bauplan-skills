@@ -293,7 +293,7 @@ When unsure about a method signature, CLI flag, or concept, fetch the relevant d
 **Python SDK:** `https://docs.bauplanlabs.com/reference/bauplan.md`
 
 **Relevant guides and concept pages:**
-- Import data: `https://docs.bauplanlabs.com/tutorial/03-import.md`
+- Import data: `https://docs.bauplanlabs.com/tutorial/import.md`
 - Schema conflicts: `https://docs.bauplanlabs.com/concepts/schema-conflicts.md`
 - Handle casting programmatically: `https://docs.bauplanlabs.com/concepts/schema-conflicts.md`
 - Data branches: `https://docs.bauplanlabs.com/concepts/git-for-data/data-branches.md`

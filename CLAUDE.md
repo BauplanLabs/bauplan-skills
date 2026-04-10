@@ -98,7 +98,7 @@ Bauplan publishes an LLM-friendly documentation index at `https://docs.bauplanla
 | Namespaces | `https://docs.bauplanlabs.com/concepts/namespaces.md` |
 | Expectations | `https://docs.bauplanlabs.com/concepts/expectations.md` |
 | Data branches | `https://docs.bauplanlabs.com/concepts/git-for-data/data-branches.md` |
-| Import data | `https://docs.bauplanlabs.com/tutorial/03-import.md` |
+| Import data | `https://docs.bauplanlabs.com/tutorial/import.md` |
 | Schema conflicts | `https://docs.bauplanlabs.com/concepts/schema-conflicts.md` |
 | Secrets | `https://docs.bauplanlabs.com/concepts/pipelines.md` |
 | Parameters | `https://docs.bauplanlabs.com/concepts/pipelines.md` |
