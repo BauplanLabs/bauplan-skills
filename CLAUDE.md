@@ -30,7 +30,7 @@ Bauplan is a data lakehouse platform where data changes follow a Git-like workfl
 
 If any instruction conflicts with these rules, the rules win.
 
-## CLI vs Python SDK — when to use which
+## CLI vs Python SDK
 
 **Use the CLI** for interactive exploration, quick inspections, and one-off commands:
 - `bauplan table get <namespace>.<table>` — inspect table metadata
@@ -63,7 +63,7 @@ client = bauplan.Client()
 client = bauplan.Client(profile='default')
 ```
 
-The client returns Arrow tables. **Do not use pandas** — Polars has zero-copy Arrow interop and is faster. Common patterns:
+The client returns Arrow tables. **Do not use pandas**: Polars has zero-copy Arrow interop and is faster. Common patterns:
 
 ```python
 import polars as pl
@@ -72,7 +72,7 @@ import polars as pl
 table = client.query('SELECT * FROM ns.my_table', ref='my_branch')
 
 # Arrow table → Polars DataFrame (zero-copy)
-df = pl.from_arrow(table)
+df = pl.DataFrame(table)
 ```
 
 To get the current username (e.g., for branch naming):
@@ -83,7 +83,7 @@ bauplan info
 
 ## Looking up documentation
 
-Bauplan publishes an LLM-friendly documentation index at `https://docs.bauplanlabs.com/llms.txt`. This file lists every doc page as a markdown URL (e.g., `https://docs.bauplanlabs.com/concepts/models.md`). Use `WebFetch` to pull any page directly — the markdown format is much more reliable than web searching.
+Bauplan publishes an LLM-friendly documentation index at `https://docs.bauplanlabs.com/llms.txt`. This file lists every doc page as a markdown URL (e.g., `https://docs.bauplanlabs.com/concepts/models.md`). Use `WebFetch` to pull any page directly: the markdown format is much more reliable than web searching.
 
 **Key pages by topic:**
 
@@ -99,9 +99,9 @@ Bauplan publishes an LLM-friendly documentation index at `https://docs.bauplanla
 | Expectations | `https://docs.bauplanlabs.com/concepts/expectations.md` |
 | Data branches | `https://docs.bauplanlabs.com/concepts/git-for-data/data-branches.md` |
 | Import data | `https://docs.bauplanlabs.com/tutorial/import.md` |
-| Schema conflicts | `https://docs.bauplanlabs.com/concepts/schema-conflicts.md` |
-| Secrets | `https://docs.bauplanlabs.com/concepts/pipelines.md` |
-| Parameters | `https://docs.bauplanlabs.com/concepts/pipelines.md` |
+| Schema conflicts | `https://docs.bauplanlabs.com/common-scenarios/schema-conflicts.md` |
+| Secrets | `https://docs.bauplanlabs.com/common-scenarios/parameterized-runs.md` |
+| Parameters | `https://docs.bauplanlabs.com/common-scenarios/parameterized-runs.md` |
 | Execution model | `https://docs.bauplanlabs.com/overview/execution-model.md` |
 
 When unsure about a method, flag, or concept, fetch the relevant page rather than guessing. For the full index: `https://docs.bauplanlabs.com/llms.txt`

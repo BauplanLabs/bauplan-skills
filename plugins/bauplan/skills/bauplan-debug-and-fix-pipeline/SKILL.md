@@ -96,6 +96,8 @@ If any rule cannot be satisfied, **STOP** and report the blocker.
 
 **Bauplan:** Run `bauplan info` to confirm connectivity and get your username (needed for branch naming in Step 2). If the project uses `uv` (look for `pyproject.toml` or `uv.lock`), use `uv run bauplan` for CLI commands. Ensure `bauplan` is installed. Do not create any branches yet.
 
+For a typed pipeline, verify that the same environment exposes `bauplan.TableSchema` with `uv run python -c "import bauplan; bauplan.TableSchema"` (or its Python without `uv`). Typed declarations require a compatible 0.3.0+ build or prerelease and backend support. Record a missing symbol as an environment mismatch before attempting code fixes.
+
 **Git:** Check whether `.git` exists. Note the result — you will need it in Step 4 when code changes begin. Do not create any Git branches yet.
 
 **Create output directories:**
@@ -157,7 +159,21 @@ Do this **before any fixes**.
 
 **Assume the code in the current repository is what ran at the time of failure.** It is the user's responsibility to ensure they are on the correct Git commit before invoking this skill. Read the pipeline code in place (`models.py`, `.sql` files, `expectations.py`, `bauplan_project.yml`) to understand the DAG structure.
 
+In typed pipelines, find inputs inside `Annotated[pa.Table, bauplan.Model(...)]`, projections in `projection_schema`, and output contracts in the mandatory `Annotated[pa.Table, Schema]` returns or SQL `output_schema` directives. Read the referenced `TableSchema` classes and field metadata. Parameters use `Annotated[<Python type>, bauplan.Parameter("name")]`; expectations return `bool`. Recognize legacy defaults when investigating old code, but preserve the project's declaration style during a targeted fix.
+
 #### 3A — Identify failing models
+
+For typed declarations, distinguish environment and contract errors before investigating data:
+
+| Error or symptom | Evidence to check |
+|------------------|-------------------|
+| Missing default values together with missing input models on annotated parameters | Recheck the local SDK probe and backend typed-SDK support. Do not revert annotations to default inputs as a workaround. |
+| `returns unknown schema` | Confirm the class exists, inherits directly from `TableSchema`, and has a name unique across project files. Check SQL `output_schema` references too. |
+| Unsupported `columns`, `ref`, or connector kwargs on `Model` | The typed `Model` accepts only `name`, `projection_schema`, and literal `filter`. Do not silently discard a projection or cross-ref/connector behavior; report unsupported migration cases. |
+| Output schema mismatch (`ModelOutputContractError`) | Compare declared fields with the actual Arrow output. The contract is exhaustive, so an undeclared extra column fails as hard as a missing one; also check integer signedness, float width, timestamp units, timezone, and nullability, since a nullable column cannot satisfy a field declared without `| None`. |
+| Filter parsing failure | `filter` must be a literal string; `$param` templating remains supported, but Python variables and f-strings are unsupported. |
+
+If the SDK or backend cannot support the typed code, report the environment blocker and stop before modifying declarations or rerunning.
 
 A pipeline run can fail in **one or more models**. Using the raw error from Step 1 and the pipeline code, identify every model that errored — not just the first one. For each, note:
 - The **model name** (function name or SQL filename)
@@ -244,8 +260,8 @@ Code changes require version control. Before editing any files:
 
 Prefer fixes closest to the data contract boundary, because contract-level issues propagate furthest and are cheapest to verify:
 
-1. **Schema corrections** — wrong column types, missing columns, mismatched output declarations
-2. **Input tightening** — add or fix `filter` / `columns` in `bauplan.Model()` to reject bad data earlier
+1. **Schema corrections**: fix output or projection `TableSchema` fields based on the catalog and transformation. Return an actual `pa.Table`; cast values when required by the intended contract. Do not invent unsupported nested field types or remove a contract to hide a mismatch.
+2. **Input tightening**: fix literal `filter` or `projection_schema` in typed `bauplan.Model()` declarations; `columns` applies only to legacy code. Preserve intended rows and columns.
 3. **Expectation fixes** — fix existing expectations that are misconfigured or too strict/lenient
 4. **Transform logic** — change the model's computation only if the above three don't resolve it
 
@@ -271,13 +287,17 @@ Before rerunning, assess what you can actually prove:
 
 #### Execute
 
+After editing annotated code, type check before you rerun: `uv run ty check` (or `ty check`) in the project directory catches broken annotations, schema classes that do not resolve, and wrong SDK keywords locally, in seconds, so the rerun tests the fix instead of a typo.
+
+For typed pipelines, a dry run checks declarations and schema references; a full run is required to validate actual Arrow output types against their contracts.
+
 ```bash
 # Preferred: strict mode, from the debug branch
-bauplan run --project-dir <dir> --ref <debug_branch> --strict on
+bauplan run --project-dir <dir> --ref <debug_branch> --strict
 
 # Fallback: dry run first, then full run
-bauplan run --project-dir <dir> --ref <debug_branch> --dry-run --strict on
-bauplan run --project-dir <dir> --ref <debug_branch> --strict on
+bauplan run --project-dir <dir> --ref <debug_branch> --dry-run --strict
+bauplan run --project-dir <dir> --ref <debug_branch> --strict
 ```
 
 After a green run: if Step 3 queries revealed data anomalies (e.g., wrong types, unexpected nulls), re-execute those queries to confirm the anomalies are resolved. Record before vs. after evidence.
