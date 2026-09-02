@@ -108,6 +108,7 @@ curl -o AGENTS.md https://raw.githubusercontent.com/BauplanLabs/bauplan-skills/m
 | `bauplan-safe-ingestion` | Ingest data from S3 with branch isolation and quality checks (WAP) |
 | `bauplan-debug-and-fix-pipeline` | Diagnose and fix failed pipeline jobs |
 | `bauplan-data-quality-checks` | Generate data quality check code for pipelines and ingestion |
+| `bauplan-migrate-to-typed-sdk` | Migrate existing codebases to the typed SDK (0.3.0+) |
 
 ## License
 

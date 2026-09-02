@@ -140,6 +140,9 @@ def validate_import(client, table_name, branch, namespace="bauplan"):
 def main():
     client = bauplan.Client()
     info = client.info()
+    if info.user is None:
+        raise RuntimeError("no user in client info; check the bauplan credentials")
+
     username = info.user.username
     timestamp = int(time.time())
     branch_name = f"{username}.import_{TABLE_NAME}_{timestamp}"
@@ -201,7 +204,7 @@ if __name__ == "__main__":
 | Method                                         | Description                                           |
 |------------------------------------------------|-------------------------------------------------------|
 | `bauplan.Client()`                             | Initialize the bauplan client                         |
-| `client.info()`                                | Get client info; access username via `.user.username` |
+| `client.info()`                                | Get client info; `.user` is optional, guard it before reading `.user.username` |
 | `client.create_branch(name, from_ref="main")`  | Create a new branch from specified ref                |
 | `client.has_branch(name)`                      | Check if branch exists                                |
 | `client.delete_branch(name)`                   | Delete a branch                                       |
@@ -294,8 +297,8 @@ When unsure about a method signature, CLI flag, or concept, fetch the relevant d
 
 **Relevant guides and concept pages:**
 - Import data: `https://docs.bauplanlabs.com/tutorial/import.md`
-- Schema conflicts: `https://docs.bauplanlabs.com/concepts/schema-conflicts.md`
-- Handle casting programmatically: `https://docs.bauplanlabs.com/concepts/schema-conflicts.md`
+- Schema conflicts: `https://docs.bauplanlabs.com/common-scenarios/schema-conflicts.md`
+- Handle casting programmatically: `https://docs.bauplanlabs.com/common-scenarios/schema-conflicts.md`
 - Data branches: `https://docs.bauplanlabs.com/concepts/git-for-data/data-branches.md`
 - Tables: `https://docs.bauplanlabs.com/concepts/tables.md`
 - Namespaces: `https://docs.bauplanlabs.com/concepts/namespaces.md`

@@ -44,9 +44,9 @@ Ensure the required packages are installed:
 - `bauplan` (the Bauplan Python SDK — required)
 - `polars` (if custom expectations need DataFrame operations — zero-copy Arrow interop)
 
-**Do not use pandas.** Bauplan's `client.query()` returns a PyArrow table directly — no `.to_arrow()` call needed. In pipeline expectations, model inputs arrive as Arrow tables too. Polars reads Arrow natively with zero-copy (`pl.from_arrow(table)`). Pandas requires a full data copy and is slower.
+Ensure the environment has a typed SDK build (0.3.0+). Typed declarations are only available with SDK 0.3.0+: older versions are *not* compatible. Use that same environment for all CLI commands and verify connectivity with `bauplan info`. Models declare their own runtime dependencies via `@bauplan.python('3.11', pip={...})`; annotation imports require `pyarrow` locally too.
 
----
+**Do not use pandas.** Bauplan's `client.query()` returns a PyArrow table directly — no `.to_arrow()` call needed. In pipeline expectations, model inputs arrive as Arrow tables too. Polars reads Arrow natively with zero-copy (`pl.DataFrame(table)`). Pandas requires a full data copy and is slower.
 
 ## Writing Effective Checks
 
@@ -88,17 +88,36 @@ When the user provides specifications directly, the "because" clause may be impl
 
 ### Deriving Checks from Pipeline Code
 
-When a `models.py` exists, read it to find `bauplan.Model()` references. These tell you exactly which columns matter and how they're used:
+When a `models.py` exists, find `bauplan.Model()` inside `Annotated[pa.Table, ...]` parameters and read each referenced projection and output `TableSchema`.
 
-- **`columns` parameter** → those columns are needed downstream. Check completeness (no nulls on critical ones).
+- **`projection_schema` fields** → those columns are needed downstream. Check completeness on critical ones. If no projection is declared, inspect the body to identify columns used.
+- **Output schemas and `TableField` metadata** → declared types, nullability (`Type | None` for optional, a bare type for required), documentation, and lineage describe the contract. Use them alongside the transformation to derive value-level checks; a declared type alone does not prove uniqueness or valid ranges.
 - **`filter` expressions** → the model assumes data matching this condition. Check that the assumption holds (e.g., `filter="total > 0"` → check for non-positive values).
 - **Joins** (multiple `bauplan.Model()` inputs joined on a key) → the join column needs uniqueness in the parent table and no nulls in both.
 - **Arithmetic in the model body** (divisions, sums, averages) → denominators need non-zero checks, aggregated columns need non-null checks.
 
-Example — given this model:
+Example: given this model input, with string identifiers and a double-precision total confirmed from the source schema:
 
 ```python
-data=bauplan.Model('orders', columns=['order_id', 'total', 'customer_id'], filter="total > 0")
+from typing import Annotated
+
+import bauplan
+import pyarrow as pa
+
+
+class OrderCheckColumns(bauplan.TableSchema):
+    """Order fields used by the downstream consumer."""
+
+    order_id: bauplan.String | None
+    total: bauplan.Float64 | None
+    customer_id: bauplan.String | None
+
+
+# Input parameter declaration inside the consuming model's signature
+data: Annotated[
+    pa.Table,
+    bauplan.Model('orders', projection_schema=OrderCheckColumns, filter="total > 0"),
+]
 ```
 
 Derive:
@@ -125,7 +144,7 @@ Six dimensions, each producing a specific kind of assertion:
 **Validity** — do values conform to expected format and range?
 - Numeric bounds (min, max, mean)
 - Allowed values for categorical columns
-- Data type conformance
+- Data type conformance through pipeline schema contracts; explicit schema checks remain relevant for ingestion
 - Built-in: `expect_column_accepted_values`, `expect_column_mean_greater_than`, `expect_column_mean_smaller_than`, `expect_column_mean_greater_or_equal_than`, `expect_column_mean_smaller_or_equal_than`
 
 **Freshness** — is the data current enough for its purpose?
@@ -173,8 +192,6 @@ Every check must run against a specific branch and ref. Never check "whatever ma
 
 This ensures checks are reproducible. If a check fails, you can go back to exactly that data state and investigate.
 
----
-
 ## Pipeline Expectations
 
 ### Where They Live
@@ -190,15 +207,28 @@ Expectations are Python functions in `expectations.py` in the pipeline project d
 
 ### How Expectations Work
 
-An expectation is a function decorated with `@bauplan.expectation()` that takes one or more model outputs as input via `bauplan.Model()` and returns a boolean.
+An expectation is a function decorated with `@bauplan.expectation()` that takes one or more tables via `Annotated[pa.Table, bauplan.Model(...)]` parameters and declares `-> bool`.
 
 ```python
+from typing import Annotated
+
 import bauplan
+import pyarrow as pa
+
+
+class OrderIdCheckColumns(bauplan.TableSchema):
+    """Order identifier checked for completeness."""
+
+    order_id: bauplan.String | None
 
 @bauplan.expectation()
 @bauplan.python('3.11')
-def test_no_null_order_ids(data=bauplan.Model('clean_orders')):
-    """order_id must not be null — billing pipeline joins on it."""
+def test_no_null_order_ids(
+    data: Annotated[
+        pa.Table, bauplan.Model('clean_orders', projection_schema=OrderIdCheckColumns)
+    ],
+) -> bool:
+    """order_id must not be null because billing joins on it."""
     from bauplan.standard_expectations import expect_column_no_nulls
     result = expect_column_no_nulls(data, 'order_id')
     assert result, 'order_id contains null values'
@@ -206,6 +236,8 @@ def test_no_null_order_ids(data=bauplan.Model('clean_orders')):
 ```
 
 Key mechanics:
+- Read column types from catalog metadata or the producing model's output schema before declaring projection fields. Never infer types from names alone. Schema classes inherit directly from `TableSchema`, have docstrings, and use names unique across project files.
+- `Model` accepts only `name`, `projection_schema`, and literal `filter`; `$param` templating is supported. Run parameters use `Annotated[<Python type>, bauplan.Parameter("name")]`, matching the YAML parameter type.
 - Expectations run as DAG nodes during `bauplan run`, after the model they depend on completes.
 - They receive the model's output as an Arrow table — same as a downstream model would.
 - `True` = pass, `False` = fail.
@@ -235,10 +267,20 @@ Each function takes an Arrow table and returns a boolean:
 Import them inside the function body, not at module level:
 
 ```python
+class EventTypeCheckColumns(bauplan.TableSchema):
+    """Event category checked against accepted values."""
+
+    event_type: bauplan.String | None
+
+
 @bauplan.expectation()
 @bauplan.python('3.11')
-def test_valid_event_types(data=bauplan.Model('staging')):
-    """event_type must be one of the known types — downstream filters depend on it."""
+def test_valid_event_types(
+    data: Annotated[
+        pa.Table, bauplan.Model('staging', projection_schema=EventTypeCheckColumns)
+    ],
+) -> bool:
+    """event_type must be known because downstream filters depend on it."""
     from bauplan.standard_expectations import expect_column_accepted_values
     result = expect_column_accepted_values(
         data, 'event_type', ['view', 'cart', 'purchase', 'remove']
@@ -253,14 +295,24 @@ For checks not covered by the built-in library — freshness, volume, cross-colu
 
 **Freshness check:**
 ```python
+class SummaryDateCheckColumns(bauplan.TableSchema):
+    """Summary timestamp checked for freshness."""
+
+    date: bauplan.TimestampMicro | None
+
+
 @bauplan.expectation()
 @bauplan.python('3.11', pip={'polars': '1.15.0'})
-def test_data_freshness(data=bauplan.Model('daily_summary', columns=['date'])):
-    """Most recent date must be within 2 days of today — dashboard shows daily metrics."""
-    import polars as pl
+def test_data_freshness(
+    data: Annotated[
+        pa.Table, bauplan.Model('daily_summary', projection_schema=SummaryDateCheckColumns)
+    ],
+) -> bool:
+    """Most recent date must be within 2 days for the daily dashboard."""
+    import polars as pl  # ty: ignore[unresolved-import]
     from datetime import datetime, timedelta
 
-    df = pl.from_arrow(data)
+    df = pl.DataFrame(data)
     max_date = df.select(pl.col('date').max()).item()
     threshold = datetime.now() - timedelta(days=2)
     is_fresh = max_date >= threshold
@@ -272,8 +324,10 @@ def test_data_freshness(data=bauplan.Model('daily_summary', columns=['date'])):
 ```python
 @bauplan.expectation()
 @bauplan.python('3.11')
-def test_minimum_row_count(data=bauplan.Model('staging')):
-    """Table must have at least 1000 rows — fewer indicates a broken upstream source."""
+def test_minimum_row_count(
+    data: Annotated[pa.Table, bauplan.Model('staging')],
+) -> bool:
+    """Table must have at least 1000 rows to meet the expected source volume."""
     row_count = data.num_rows
     is_sufficient = row_count >= 1000
     assert is_sufficient, f'Only {row_count} rows — expected at least 1000'
@@ -282,15 +336,24 @@ def test_minimum_row_count(data=bauplan.Model('staging')):
 
 **Cross-column consistency:**
 ```python
+class TripTimeCheckColumns(bauplan.TableSchema):
+    """Trip timestamps checked for chronological consistency."""
+
+    pickup_datetime: bauplan.TimestampMicro | None
+    dropoff_datetime: bauplan.TimestampMicro | None
+
+
 @bauplan.expectation()
 @bauplan.python('3.11', pip={'polars': '1.15.0'})
 def test_dates_ordered(
-    data=bauplan.Model('trips', columns=['pickup_datetime', 'dropoff_datetime'])
-):
-    """dropoff must be after pickup — time travel model breaks on reversed trips."""
-    import polars as pl
+    data: Annotated[
+        pa.Table, bauplan.Model('trips', projection_schema=TripTimeCheckColumns)
+    ],
+) -> bool:
+    """dropoff must be after pickup for valid trip durations."""
+    import polars as pl  # ty: ignore[unresolved-import]
 
-    df = pl.from_arrow(data)
+    df = pl.DataFrame(data)
     violations = df.filter(pl.col('dropoff_datetime') < pl.col('pickup_datetime'))
     is_valid = violations.height == 0
     assert is_valid, f'{violations.height} rows have dropoff before pickup'
@@ -299,35 +362,49 @@ def test_dates_ordered(
 
 ### Output Column Validation
 
-The `columns` parameter in `@bauplan.model()` provides lightweight structural schema enforcement. It validates that the model's output contains exactly the declared columns.
+Models declare output contracts with `-> Annotated[pa.Table, OutputSchema]`. The return annotation is mandatory and must take this exact form: a bare `-> pa.Table` and a missing annotation are both rejected at parse time. The schema declares columns and their types, with `Type | None` for an optional column and a bare type for a required one. A required output column is enforced by counting nulls in the returned data, so it doubles as a not-null check and makes a separate no-nulls expectation on that column redundant. This example assumes string IDs, double-precision totals, and day-precision dates:
 
 ```python
-@bauplan.model(
-    columns=['order_id', 'customer_id', 'total', 'order_date'],
-    materialization_strategy='REPLACE'
-)
+class CleanOrdersSchema(bauplan.TableSchema):
+    """Order fields retained for downstream consumers."""
+
+    order_id: bauplan.String | None
+    customer_id: bauplan.String | None
+    total: bauplan.Float64 | None
+    order_date: bauplan.Date32 | None
+
+
+@bauplan.model(materialization_strategy='REPLACE')
 @bauplan.python('3.11')
-def clean_orders(data=bauplan.Model('raw_orders')):
-    ...
+def clean_orders(
+    data: Annotated[
+        pa.Table, bauplan.Model('raw_orders', projection_schema=CleanOrdersSchema)
+    ],
+) -> Annotated[pa.Table, CleanOrdersSchema]:
+    """Retain the order fields required downstream."""
+    return data
 ```
 
-This is not statistical quality checking — it catches schema drift, dropped columns, and structural mismatches. Use it on every model. It complements expectations but does not replace them.
+Output schemas are exhaustive and enforced on every run with no flag to opt in: the returned table must carry exactly the declared columns, so a missing column, an extra one, or a dtype mismatch fails the run with `ModelOutputContractError`. Value-level expectations still check ranges, uniqueness, freshness, and business rules. Flag existing dtype-only expectations as potentially redundant when the corresponding contract covers them; propose replacements without deleting checks silently. Decimal columns and nested output fields have no supported schema type and are annotated `Any`, so the contract does not constrain them and they still need explicit checks.
 
-In strict mode (`bauplan run --strict`), column mismatches fail the run immediately.
+SQL models use `-- bauplan: output_schema = SchemaName` referencing a `TableSchema` in the sibling `models.py`.
 
 ### Running and Verifying
 
+Type check first: the annotations on expectations and projection schemas make `uv run ty check` (or `ty check`) a local gate that catches misspelled field types, unknown `bauplan` symbols, and schema classes that do not resolve, in seconds and without submitting a job. Imports of model runtime dependencies (polars, duckdb) resolve only in the remote environment, so silence those with `# ty: ignore[unresolved-import]` at the import line, but only when the checker actually reports them: if the package is installed locally, that comment becomes `unused-ignore-comment` instead. Only then go to the platform.
+
 ```bash
-# Validate DAG, schemas, and expectations without materializing
+# First gate: annotations are checked locally, before any job is submitted
+uv run ty check
+
+# Validate declarations and schema references without materializing
 bauplan run --dry-run --strict
 
-# Execute pipeline with blocking expectations
+# Execute with blocking expectations and output contract validation
 bauplan run --strict
 ```
 
 After a run, expectation results appear in the run output. Failed expectations show the assertion message. Use `bauplan job logs <job_id>` to review results from a previous run.
-
----
 
 ## Ingestion Validation
 
@@ -442,8 +519,6 @@ result = client.query(
 )
 ```
 
----
-
 ## Reference
 
 When unsure about a method signature, CLI flag, or concept, fetch the relevant doc page via `WebFetch` rather than guessing. Pages are markdown and LLM-friendly.
@@ -452,6 +527,7 @@ When unsure about a method signature, CLI flag, or concept, fetch the relevant d
 **Standard expectations:** `https://docs.bauplanlabs.com/reference/bauplan-standard-expectations.md`
 
 **Relevant concept pages:**
+- Semantic annotations: `https://docs.bauplanlabs.com/concepts/semantic_annotations.md`
 - Expectations: `https://docs.bauplanlabs.com/concepts/expectations.md`
 
 **Full doc index:** `https://docs.bauplanlabs.com/llms.txt`
@@ -460,4 +536,4 @@ When unsure about a method signature, CLI flag, or concept, fetch the relevant d
 - `bauplan --help` — lists all available commands
 - `bauplan <command> --help` — shows arguments and options for a specific command (e.g., `bauplan run --help`, `bauplan job --help`)
 
-**Validating generated Python:** After writing or updating `expectations.py` or validation code, run `ruff check` and `ruff format` to catch syntax errors and style issues, and `ty` to catch type errors — these verify the code compiles and the SDK calls are well-formed without executing it. Only run these if they are installed (check with `which ruff` / `which ty`).
+**Validating generated Python:** After writing or updating `expectations.py` or validation code, run `ruff check` and `ruff format` to catch syntax errors and style issues, and `uv run ty check` (or `ty check`) to catch type errors: these verify the code compiles and the annotations and SDK calls are well-formed without executing it. Only run these if they are installed (check with `which ruff` / `which ty`).

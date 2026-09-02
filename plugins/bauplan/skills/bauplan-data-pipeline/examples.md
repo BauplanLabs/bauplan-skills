@@ -17,7 +17,7 @@ This document contains advanced examples and edge cases for bauplan pipelines.
 
 ## Output Columns Validation Example
 
-This example demonstrates the `columns` parameter in `@bauplan.model()` for output schema validation.
+This example declares output columns and their types with a `TableSchema` return annotation.
 
 **Scenario**: Source table `titanic` has the following schema:
 
@@ -29,18 +29,38 @@ This example demonstrates the `columns` parameter in `@bauplan.model()` for outp
 A model that drops the `embarked` column should declare its output columns in the following way:
 
 ```python
-import bauplan
+from typing import Annotated
 
-# these columns are the expected output - in fact `embarked` is not there
-@bauplan.model(columns=['passenger_id', 'name', 'age', 'sex'])
+import bauplan
+import pyarrow as pa
+
+
+class PassengerColumns(bauplan.TableSchema):
+    """Passenger fields read before dropping embarkation."""
+
+    passenger_id: bauplan.Int64 | None
+    name: bauplan.String | None
+    age: bauplan.Int64 | None
+    sex: bauplan.String | None
+    embarked: bauplan.String | None
+
+
+class CleanPassengerSchema(bauplan.TableSchema):
+    """Passenger output without embarkation."""
+
+    passenger_id: bauplan.Int64 | None
+    name: bauplan.String | None
+    age: bauplan.Int64 | None
+    sex: bauplan.String | None
+
+
+@bauplan.model()
 @bauplan.python('3.11')
 def titanic_clean(
-    data=bauplan.Model(
-        'titanic',
-        # these columns are the input to the model - in fact, `embarked` is present
-        columns=['passenger_id', 'name', 'age', 'sex', 'embarked']
-    )
-):
+    data: Annotated[
+        pa.Table, bauplan.Model('titanic', projection_schema=PassengerColumns)
+    ],
+) -> Annotated[pa.Table, CleanPassengerSchema]:
     """
     Removes the embarked column from titanic data.
 
@@ -55,11 +75,27 @@ def titanic_clean(
 **Key points:**
 1. First, check the source table schema with `bauplan table get bauplan.titanic`
 2. Determine which columns your transformation produces
-3. Specify `columns=[...]` in `@bauplan.model()` to enable output validation
+3. Declare `-> Annotated[pa.Table, OutputSchema]` for output validation
 4. Reason on how the tables change as they flow through the pipeline, so that you can accurately declare output schemas for all the downstream models as well
 
 ## Materialization Strategies
 The `materialization_strategy` parameter controls how model output is persisted.
+
+The first three Python examples use this minimal event schema for both projection and output because they preserve the selected fields:
+
+```python
+from typing import Annotated
+
+import bauplan
+import pyarrow as pa
+
+
+class EventSchema(bauplan.TableSchema):
+    """Event identifiers and dates preserved by materialization examples."""
+
+    event_id: bauplan.String | None
+    date: bauplan.Date32 | None
+```
 
 ### NONE (default) - In-memory only
 Streams output as Arrow table without persisting to storage:
@@ -67,9 +103,11 @@ Streams output as Arrow table without persisting to storage:
 ```python
 @bauplan.model()  # No materialization_strategy = NONE
 @bauplan.python('3.11')
-def intermediate_transform(data=bauplan.Model('source')):
+def intermediate_transform(
+    data: Annotated[pa.Table, bauplan.Model('source', projection_schema=EventSchema)],
+) -> Annotated[pa.Table, EventSchema]:
     """Intermediate step, not persisted to lakehouse."""
-    return data.filter(...)
+    return data
 ```
 
 ### REPLACE - Full table overwrite
@@ -78,7 +116,9 @@ Replaces entire table on each run. Use for most pipelines:
 ```python
 @bauplan.model(materialization_strategy='REPLACE')
 @bauplan.python('3.11')
-def daily_summary(data=bauplan.Model('events')):
+def daily_summary(
+    data: Annotated[pa.Table, bauplan.Model('events', projection_schema=EventSchema)],
+) -> Annotated[pa.Table, EventSchema]:
     """Overwrites previous results completely."""
     return data
 ```
@@ -89,7 +129,12 @@ Adds new rows to existing table:
 ```python
 @bauplan.model(materialization_strategy='APPEND')
 @bauplan.python('3.11')
-def event_log(data=bauplan.Model('new_events', filter="date = CURRENT_DATE")):
+def event_log(
+    data: Annotated[
+        pa.Table,
+        bauplan.Model('new_events', projection_schema=EventSchema, filter="date = CURRENT_DATE"),
+    ],
+) -> Annotated[pa.Table, EventSchema]:
     """Appends today's events to historical table."""
     return data
 ```
@@ -99,43 +144,82 @@ For SQL models,define the materialization strategy using a comment:
 ```sql
 -- product_catalog.sql
 -- bauplan: materialization_strategy=REPLACE
+-- bauplan: output_schema = ProductCatalogSchema
 
 SELECT product_id, name, price FROM raw_products
+```
+
+Define the SQL output schema in the sibling `models.py`:
+
+```python
+class ProductCatalogSchema(bauplan.TableSchema):
+    """Product fields returned by the SQL catalog model."""
+
+    product_id: bauplan.String | None
+    name: bauplan.String | None
+    price: bauplan.Float64 | None
 ```
 
 ### OVERWRITE_PARTITIONS - Selective partition replacement
 Replaces rows matching `overwrite_filter` while preserving others. Requires `partitioned_by`:
 
 ```python
+class PartitionedTripSchema(bauplan.TableSchema):
+    """Trip timestamp and mileage for partition replacement."""
+
+    pickup_datetime: bauplan.TimestampMicro | None
+    trip_miles: bauplan.Float64 | None
+
+
 @bauplan.model(
     partitioned_by=['day(pickup_datetime)'],
     materialization_strategy='OVERWRITE_PARTITIONS',
     overwrite_filter="pickup_datetime >= '2024-01-15' AND pickup_datetime < '2024-01-16'"
 )
 @bauplan.python('3.11')
-def partitioned_trips(data=bauplan.Model('trips', filter="pickup_datetime >= '2024-01-15'")):
+def partitioned_trips(
+    data: Annotated[
+        pa.Table,
+        bauplan.Model('trips', projection_schema=PartitionedTripSchema, filter="pickup_datetime >= '2024-01-15'"),
+    ],
+) -> Annotated[pa.Table, PartitionedTripSchema]:
     """Replaces only the specified day partition."""
     return data
 ```
 
 ## DuckDB in Python Models
 Use DuckDB for SQL-like transformations in Python. DuckDB can be imported like any other Python dependency using the `@bauplan.python()` decorator:
-Always use `columns` and `filter` for I/O pushdown in the model input:
+Use `projection_schema` for needed columns and a literal `filter` for I/O pushdown:
 
 ```python
-@bauplan.model(
-    materialization_strategy='REPLACE',
-    columns=['purchase_session', 'event_hour', 'session_count', 'total_revenue', 'avg_order_value']
-)
+class PurchaseEventColumns(bauplan.TableSchema):
+    """Event fields needed for purchase aggregation."""
+
+    user_session: bauplan.String | None
+    event_time: bauplan.TimestampMicro | None
+    event_type: bauplan.String | None
+    price: bauplan.Float64 | None
+
+
+class PurchaseAnalyticsSchema(bauplan.TableSchema):
+    """Purchase counts and revenue per session and hour."""
+
+    purchase_session: bauplan.String | None
+    event_hour: bauplan.TimestampMicro | None
+    session_count: bauplan.Int64 | None
+    total_revenue: bauplan.Float64 | None
+    avg_order_value: bauplan.Float64 | None
+
+
+@bauplan.model(materialization_strategy='REPLACE')
 @bauplan.python('3.11', pip={'duckdb': '1.0.0'})
 def purchase_analytics(
-    # Use columns and filter for I/O pushdown
-    events=bauplan.Model(
-        'ecommerce_events',
-        columns=['user_session', 'event_time', 'event_type', 'price'],
-        filter="event_type = 'purchase'"
-    )
-):
+    # Projection and filtering apply before the function receives the table (pushdown)
+    events: Annotated[
+        pa.Table,
+        bauplan.Model('ecommerce_events', projection_schema=PurchaseEventColumns, filter="event_type = 'purchase'"),
+    ],
+) -> Annotated[pa.Table, PurchaseAnalyticsSchema]:
     """
     Aggregates purchase events by session and hour.
 
@@ -143,7 +227,7 @@ def purchase_analytics(
     |------------------|---------------------|---------------|---------------|-----------------|
     | abc123           | 2024-01-01 10:00:00 | 3             | 150.00        | 50.00           |
     """
-    import duckdb
+    import duckdb  # ty: ignore[unresolved-import]
 
     con = duckdb.connect()
     con.register("events", events)
@@ -165,21 +249,43 @@ def purchase_analytics(
 ### Python Model with Multiple Inputs
 Models can take multiple tables as input - just add more `bauplan.Model()` parameters:
 ```python
-@bauplan.model(
-    materialization_strategy='REPLACE',
-    columns=['user_session', 'pickup_datetime', 'trip_miles', 'Borough', 'Zone']
-)
+class SessionTripColumns(bauplan.TableSchema):
+    """Trip fields needed to attach zone names."""
+
+    user_session: bauplan.String | None
+    pickup_datetime: bauplan.TimestampMicro | None
+    trip_miles: bauplan.Float64 | None
+    PULocationID: bauplan.Int64 | None
+
+
+class ZoneColumns(bauplan.TableSchema):
+    """Zone lookup key and labels."""
+
+    LocationID: bauplan.Int64 | None
+    Borough: bauplan.String | None
+    Zone: bauplan.String | None
+
+
+class TripsWithZonesSchema(bauplan.TableSchema):
+    """Trips with zone labels and without join keys."""
+
+    user_session: bauplan.String | None
+    pickup_datetime: bauplan.TimestampMicro | None
+    trip_miles: bauplan.Float64 | None
+    Borough: bauplan.String | None
+    Zone: bauplan.String | None
+
+
+@bauplan.model(materialization_strategy='REPLACE')
 @bauplan.python('3.11', pip={'polars': '1.15.0'})
 def trips_with_zones(
-    trips=bauplan.Model(
-        'taxi_trips',
-        columns=['user_session', 'pickup_datetime', 'trip_miles', 'PULocationID']
-    ),
-    zones=bauplan.Model(
-        'taxi_zones',
-        columns=['LocationID', 'Borough', 'Zone']
-    )
-):
+    trips: Annotated[
+        pa.Table, bauplan.Model('taxi_trips', projection_schema=SessionTripColumns)
+    ],
+    zones: Annotated[
+        pa.Table, bauplan.Model('taxi_zones', projection_schema=ZoneColumns)
+    ],
+) -> Annotated[pa.Table, TripsWithZonesSchema]:
     """
     Joins trips with zone information.
 
@@ -187,47 +293,60 @@ def trips_with_zones(
     |--------------|---------------------|------------|-----------|---------|
     | abc123       | 2024-01-01 10:00:00 | 5.2        | Manhattan | Midtown |
     """
-    import polars as pl
+    import polars as pl  # ty: ignore[unresolved-import]
 
-    trips_df = pl.from_arrow(trips)
-    zones_df = pl.from_arrow(zones)
+    trips_df = pl.DataFrame(trips)
+    zones_df = pl.DataFrame(zones)
 
     result = trips_df.join(
         zones_df,
         left_on='PULocationID',
         right_on='LocationID'
-    ).drop('PULocationID', 'LocationID')
+    ).select('user_session', 'pickup_datetime', 'trip_miles', 'Borough', 'Zone')
 
     return result.to_arrow()
 ```
 ## I/O Pushdown with Column Selection and Filtering
 
-> **CRITICAL**: Always use `columns` and `filter` parameters to enable I/O pushdown. This restricts data at the storage level, dramatically reducing data transfer and improving performance.
+> **CRITICAL**: Use `projection_schema` to select needed fields and a literal `filter` to restrict rows when applicable. This restricts data at the storage level, dramatically reducing data transfer and improving performance. `$param` templating inside the literal is supported; f-strings and filter variables are not. 
 
 ```python
-@bauplan.model(columns=[
-    'pickup_datetime', 'dropoff_datetime', 'PULocationID', 'DOLocationID',
-    'trip_miles', 'base_passenger_fare', 'Borough', 'Zone'
-])
+class DecemberTripColumns(bauplan.TableSchema):
+    """Trip fields needed for the December zone join."""
+
+    pickup_datetime: bauplan.TimestampMicro | None
+    dropoff_datetime: bauplan.TimestampMicro | None
+    PULocationID: bauplan.Int64 | None
+    DOLocationID: bauplan.Int64 | None
+    trip_miles: bauplan.Float64 | None
+    base_passenger_fare: bauplan.Float64 | None
+
+
+class DecemberTripsSchema(bauplan.TableSchema):
+    """December trips with zone labels."""
+
+    pickup_datetime: bauplan.TimestampMicro | None
+    dropoff_datetime: bauplan.TimestampMicro | None
+    PULocationID: bauplan.Int64 | None
+    DOLocationID: bauplan.Int64 | None
+    trip_miles: bauplan.Float64 | None
+    base_passenger_fare: bauplan.Float64 | None
+    Borough: bauplan.String | None
+    Zone: bauplan.String | None
+
+
+# ZoneColumns is defined in the multiple-input example above
+@bauplan.model()
 @bauplan.python('3.11')
 def optimized_model(
-    trips=bauplan.Model(
-        'taxi_fhvhv',
-        columns=[
-            'pickup_datetime',
-            'dropoff_datetime',
-            'PULocationID',
-            'DOLocationID',
-            'trip_miles',
-            'base_passenger_fare'
-        ],
-        filter="pickup_datetime >= '2022-12-01' AND pickup_datetime < '2023-01-01'"
-    ),
-    zones=bauplan.Model(
-        'taxi_zones',
-        columns=['LocationID', 'Borough', 'Zone']
-    ),
-):
+    trips: Annotated[
+        pa.Table,
+        bauplan.Model('taxi_fhvhv', projection_schema=DecemberTripColumns, filter="pickup_datetime >= '2022-12-01' AND pickup_datetime < '2023-01-01'"),
+    ],
+    zones: Annotated[
+        pa.Table, bauplan.Model('taxi_zones', projection_schema=ZoneColumns)
+    ],
+) -> Annotated[pa.Table, DecemberTripsSchema]:
     """
     Joins trips with zone data for December 2022.
 
@@ -244,7 +363,10 @@ def optimized_model(
 Create `expectations.py` in your project folder:
 
 ```python
+from typing import Annotated
+
 import bauplan
+import pyarrow as pa
 from bauplan.standard_expectations import (
     expect_column_no_nulls,
     expect_column_all_unique,
@@ -253,21 +375,30 @@ from bauplan.standard_expectations import (
 
 @bauplan.expectation()
 @bauplan.python('3.11')
-def test_no_null_ids(data=bauplan.Model('clean_orders')):
+def test_no_null_ids(
+    data: Annotated[pa.Table, bauplan.Model('clean_orders')],
+) -> bool:
+    """Order identifiers must be present."""
     result = expect_column_no_nulls(data, 'order_id')
     assert result, 'order_id must not contain null values'
     return result
 
 @bauplan.expectation()
 @bauplan.python('3.11')
-def test_unique_order_ids(data=bauplan.Model('clean_orders')):
+def test_unique_order_ids(
+    data: Annotated[pa.Table, bauplan.Model('clean_orders')],
+) -> bool:
+    """Order identifiers must be unique."""
     result = expect_column_all_unique(data, 'order_id')
     assert result, 'order_id must be unique'
     return result
 
 @bauplan.expectation()
 @bauplan.python('3.11')
-def test_reasonable_trip_distance(data=bauplan.Model('clean_trips')):
+def test_reasonable_trip_distance(
+    data: Annotated[pa.Table, bauplan.Model('clean_trips')],
+) -> bool:
+    """Mean trip distance must remain below the expected bound."""
     # Average trip should be < 50 miles
     upper_bound = expect_column_mean_smaller_than(data, 'trip_miles', 50.0)
     assert upper_bound, 'Average trip distance out of expected range'
@@ -315,32 +446,96 @@ project:
 ### models.py
 
 Key patterns used:
-- `columns` and `filter` parameters for I/O pushdown
+- `projection_schema` and literal `filter` parameters for I/O pushdown
 - `materialization_strategy='REPLACE'` for persisted outputs
 - Docstrings with output schema as ASCII tables
 
 ```python
+from typing import Annotated, Any
+
 import bauplan
+import pyarrow as pa
+
+
+class RawEventColumns(bauplan.TableSchema):
+    """Raw event fields needed for staging."""
+
+    event_id: bauplan.String | None
+    event_type: bauplan.String | None
+    product_id: bauplan.String | None
+    brand: bauplan.String | None
+    price: bauplan.Float64 | None
+    user_id: bauplan.String | None
+    user_session: bauplan.String | None
+    event_time: bauplan.TimestampMicro | None
+
+
+class StagingSchema(bauplan.TableSchema):
+    """Normalized events with decimal prices."""
+
+    event_id: bauplan.String | None
+    event_type: bauplan.String | None
+    product_id: bauplan.String | None
+    brand: bauplan.String | None
+    price: Any  # decimal column, no schema type available
+    user_id: bauplan.String | None
+    user_session: bauplan.String | None
+    event_time: bauplan.TimestampMicro | None
+
+
+class SessionEventColumns(bauplan.TableSchema):
+    """Staged event fields needed for session aggregation."""
+
+    user_session: bauplan.String | None
+    event_time: bauplan.TimestampMicro | None
+    product_id: bauplan.String | None
+    event_type: bauplan.String | None
+    price: Any  # decimal column, no schema type available
+
+
+class SessionMetricsSchema(bauplan.TableSchema):
+    """Session time windows, counts, and purchase revenue."""
+
+    user_session: bauplan.String | None
+    session_start: bauplan.TimestampMicro | None
+    session_end: bauplan.TimestampMicro | None
+    total_events: bauplan.Int64 | None
+    products_viewed: bauplan.Int64 | None
+    purchases: bauplan.Int64 | None
+    session_revenue: Any  # decimal column, no schema type available
+
+
+class DailySessionColumns(bauplan.TableSchema):
+    """Session fields needed for the daily summary."""
+
+    session_start: bauplan.TimestampMicro | None
+    purchases: bauplan.Int64 | None
+    session_revenue: Any  # decimal column, no schema type available
+
+
+class DailySummarySchema(bauplan.TableSchema):
+    """Daily counts, session conversion rate, and revenue across all sessions."""
+
+    date: bauplan.TimestampMicro | None
+    total_sessions: bauplan.Int64 | None
+    total_purchases: bauplan.Int64 | None
+    conversion_rate: bauplan.Float64 | None
+    total_revenue: Any  # decimal column, no schema type available
+    avg_session_revenue: bauplan.Float64 | None
 
 
 # ============================================================================
 # Stage 1: Clean raw data
 # ============================================================================
 
-@bauplan.model(
-    materialization_strategy='REPLACE',
-    columns=['event_id', 'event_type', 'product_id', 'brand',
-             'price', 'user_id', 'user_session', 'event_time']
-)
+@bauplan.model(materialization_strategy='REPLACE')
 @bauplan.python('3.11', pip={'polars': '1.15.0'})
 def staging(
-    raw=bauplan.Model(
-        'raw_ecommerce_events',
-        columns=['event_id', 'event_type', 'product_id', 'brand',
-                 'price', 'user_id', 'user_session', 'event_time'],
-        filter="event_time IS NOT NULL AND price > 0"
-    )
-):
+    raw: Annotated[
+        pa.Table,
+        bauplan.Model('raw_ecommerce_events', projection_schema=RawEventColumns, filter="event_time IS NOT NULL AND price > 0"),
+    ],
+) -> Annotated[pa.Table, StagingSchema]:
     """
     Cleans raw e-commerce events: normalizes event_type, fills missing brands,
     and casts price to decimal.
@@ -350,9 +545,9 @@ def staging(
     | evt_001  | view       | prod_123   | Nike    | 99.99  | usr_001 | sess_abc     | 2024-01-01 10:00:00 |
     | evt_002  | purchase   | prod_456   | Unknown | 149.50 | usr_002 | sess_def     | 2024-01-01 10:05:00 |
     """
-    import polars as pl
+    import polars as pl  # ty: ignore[unresolved-import]
 
-    df = pl.from_arrow(raw)
+    df = pl.DataFrame(raw)
 
     result = df.with_columns([
         pl.col('event_type').str.to_lowercase(),
@@ -368,18 +563,13 @@ def staging(
 # Stage 2: Aggregate to session-level metrics
 # ============================================================================
 
-@bauplan.model(
-    materialization_strategy='REPLACE',
-    columns=['user_session', 'session_start', 'session_end', 'total_events',
-             'products_viewed', 'purchases', 'session_revenue']
-)
+@bauplan.model(materialization_strategy='REPLACE')
 @bauplan.python('3.11', pip={'polars': '1.15.0'})
 def session_metrics(
-    staging=bauplan.Model(
-        'staging',
-        columns=['user_session', 'event_time', 'product_id', 'event_type', 'price']
-    )
-):
+    staging: Annotated[
+        pa.Table, bauplan.Model('staging', projection_schema=SessionEventColumns)
+    ],
+) -> Annotated[pa.Table, SessionMetricsSchema]:
     """
     Aggregates events into session-level metrics.
 
@@ -387,20 +577,22 @@ def session_metrics(
     |--------------|---------------------|---------------------|--------------|-----------------|-----------|-----------------|
     | sess_abc     | 2024-01-01 10:00:00 | 2024-01-01 10:30:00 | 15           | 5               | 2         | 150.00          |
     """
-    import polars as pl
+    import polars as pl  # ty: ignore[unresolved-import]
 
-    df = pl.from_arrow(staging)
+    df = pl.DataFrame(staging)
 
     result = df.group_by('user_session').agg([
         pl.col('event_time').min().alias('session_start'),
         pl.col('event_time').max().alias('session_end'),
-        pl.len().alias('total_events'),
-        pl.col('product_id').n_unique().alias('products_viewed'),
-        (pl.col('event_type') == 'purchase').sum().alias('purchases'),
+        # Polars counts are unsigned unless explicitly cast to the contract type
+        pl.len().cast(pl.Int64).alias('total_events'),
+        pl.col('product_id').n_unique().cast(pl.Int64).alias('products_viewed'),
+        (pl.col('event_type') == 'purchase').sum().cast(pl.Int64).alias('purchases'),
         pl.when(pl.col('event_type') == 'purchase')
           .then(pl.col('price'))
           .otherwise(0)
           .sum()
+          .cast(pl.Decimal(38, 2))
           .alias('session_revenue')
     ])
 
@@ -411,38 +603,34 @@ def session_metrics(
 # Stage 3: Daily summary (final output)
 # ============================================================================
 
-@bauplan.model(
-    materialization_strategy='REPLACE',
-    columns=['date', 'total_sessions', 'total_purchases', 'conversion_rate',
-             'total_revenue', 'avg_session_revenue']
-)
+@bauplan.model(materialization_strategy='REPLACE')
 @bauplan.python('3.11', pip={'polars': '1.15.0'})
 def daily_summary(
-    sessions=bauplan.Model(
-        'session_metrics',
-        columns=['session_start', 'purchases', 'session_revenue'],
-        filter="purchases > 0"
-    )
-):
+    sessions: Annotated[
+        pa.Table,
+        bauplan.Model('session_metrics', projection_schema=DailySessionColumns),
+    ],
+) -> Annotated[pa.Table, DailySummarySchema]:
     """
-    Computes daily summary metrics from sessions with purchases.
+    Computes daily metrics across all sessions; conversion is the percentage with at least one purchase.
 
     | date       | total_sessions | total_purchases | conversion_rate | total_revenue | avg_session_revenue |
     |------------|----------------|-----------------|-----------------|---------------|---------------------|
-    | 2024-01-01 | 500            | 150             | 30.00           | 15000.00      | 100.00              |
+    | 2024-01-01 | 500            | 150             | 30.00           | 15000.00      | 30.00               |
     """
-    import polars as pl
+    import polars as pl  # ty: ignore[unresolved-import]
 
-    df = pl.from_arrow(sessions)
+    df = pl.DataFrame(sessions)
 
     result = df.group_by(
         pl.col('session_start').dt.truncate('1d').alias('date')
     ).agg([
-        pl.len().alias('total_sessions'),
+        pl.len().cast(pl.Int64).alias('total_sessions'),
         pl.col('purchases').sum().alias('total_purchases'),
-        (pl.col('purchases').sum() / pl.len() * 100).round(2).alias('conversion_rate'),
-        pl.col('session_revenue').sum().alias('total_revenue'),
-        pl.col('session_revenue').mean().round(2).alias('avg_session_revenue')
+        # A session converts once even when it contains multiple purchases
+        ((pl.col('purchases') > 0).mean() * 100).round(2).alias('conversion_rate'),
+        pl.col('session_revenue').sum().cast(pl.Decimal(38, 2)).alias('total_revenue'),
+        pl.col('session_revenue').cast(pl.Float64).mean().round(2).alias('avg_session_revenue')
     ]).sort('date')
 
     return result.to_arrow()
@@ -452,13 +640,18 @@ def daily_summary(
 
 Expectations validate data quality after the pipeline runs. They must return `True` (pass) or raise an exception (fail).
 ```python
+from typing import Annotated
+
 import bauplan
+import pyarrow as pa
 from bauplan.standard_expectations import expect_column_no_nulls
 
 
 @bauplan.expectation()
 @bauplan.python('3.11')
-def test_staging_completeness(data=bauplan.Model('staging')):
+def test_staging_completeness(
+    data: Annotated[pa.Table, bauplan.Model('staging')],
+) -> bool:
     """Verify critical columns have no null values."""
     for col in ['event_id', 'user_session', 'event_time']:
         result = expect_column_no_nulls(data, col)
@@ -471,15 +664,14 @@ def test_staging_completeness(data=bauplan.Model('staging')):
 # 1. Verify source table exists
 bauplan table get bauplan.raw_ecommerce_events
 
-# 2. create a branch to run
-bauplan branch create <username>.<branch_name>
-bauplan checkout <username>.<branch_name>
+# 2. Create a branch to run
+bauplan checkout -b <username>.<branch_name>
 
-# 3. Dry run to validate DAG and output schemas
-bauplan run --dry-run
+# 3. Dry run
+bauplan run --dry-run --strict
 
 # 4. Execute pipeline
-bauplan run
+bauplan run --strict
 
 # 5. Verify outputs
 bauplan table get bauplan.daily_summary

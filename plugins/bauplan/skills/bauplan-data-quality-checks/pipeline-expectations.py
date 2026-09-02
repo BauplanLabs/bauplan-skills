@@ -14,7 +14,54 @@ Place this file as expectations.py in the pipeline project directory,
 alongside models.py and bauplan_project.yml.
 """
 
+from typing import Annotated, Any
+
 import bauplan
+import pyarrow as pa
+
+
+# Verify source contracts before adapting these projections to another pipeline
+class SessionIdExpectationColumns(bauplan.TableSchema):
+    """Session identifier used for completeness and uniqueness checks."""
+
+    user_session: bauplan.String | None
+
+
+class EventTimeExpectationColumns(bauplan.TableSchema):
+    """Event timestamp used to validate session time inputs."""
+
+    event_time: bauplan.TimestampMicro | None
+
+
+class EventTypeExpectationColumns(bauplan.TableSchema):
+    """Event category checked against accepted values."""
+
+    event_type: bauplan.String | None
+
+
+class PriceExpectationColumns(bauplan.TableSchema):
+    """Staged decimal price checked before session aggregation."""
+
+    price: Any  # decimal column, no schema type available
+
+
+class SessionRevenueExpectationColumns(bauplan.TableSchema):
+    """Aggregated decimal revenue checked before daily summarization."""
+
+    session_revenue: Any  # decimal column, no schema type available
+
+
+class SummaryDateExpectationColumns(bauplan.TableSchema):
+    """Daily timestamp checked for freshness and completeness."""
+
+    date: bauplan.TimestampMicro | None
+
+
+class ConversionRateExpectationColumns(bauplan.TableSchema):
+    """Daily conversion metric checked against its expected bound."""
+
+    conversion_rate: bauplan.Float64 | None
+
 
 # ==========================================================================
 # Expectations on: staging
@@ -24,7 +71,12 @@ import bauplan
 
 @bauplan.expectation()
 @bauplan.python("3.11")
-def test_staging_no_null_sessions(data=bauplan.Model("staging", columns=["user_session"])):
+def test_staging_no_null_sessions(
+    data: Annotated[
+        pa.Table,
+        bauplan.Model("staging", projection_schema=SessionIdExpectationColumns),
+    ],
+) -> bool:
     """
     user_session must not be null — session_metrics groups by it.
     Severity: FAIL (null sessions produce orphan rows that silently drop from aggregations).
@@ -38,7 +90,12 @@ def test_staging_no_null_sessions(data=bauplan.Model("staging", columns=["user_s
 
 @bauplan.expectation()
 @bauplan.python("3.11")
-def test_staging_no_null_event_time(data=bauplan.Model("staging", columns=["event_time"])):
+def test_staging_no_null_event_time(
+    data: Annotated[
+        pa.Table,
+        bauplan.Model("staging", projection_schema=EventTimeExpectationColumns),
+    ],
+) -> bool:
     """
     event_time must not be null — session_metrics computes session_start/session_end from it.
     Severity: FAIL (null timestamps break MIN/MAX aggregations).
@@ -46,27 +103,41 @@ def test_staging_no_null_event_time(data=bauplan.Model("staging", columns=["even
     from bauplan.standard_expectations import expect_column_no_nulls
 
     result = expect_column_no_nulls(data, "event_time")
-    assert result, "event_time contains null values — session time windows will be wrong"
+    assert result, (
+        "event_time contains null values — session time windows will be wrong"
+    )
     return result
 
 
 @bauplan.expectation()
 @bauplan.python("3.11")
-def test_staging_valid_event_types(data=bauplan.Model("staging", columns=["event_type"])):
+def test_staging_valid_event_types(
+    data: Annotated[
+        pa.Table,
+        bauplan.Model("staging", projection_schema=EventTypeExpectationColumns),
+    ],
+) -> bool:
     """
     event_type must be one of the known types — session_metrics filters on event_type='purchase'.
     Severity: FAIL (unknown types could be mis-categorized purchases that inflate or deflate revenue).
     """
     from bauplan.standard_expectations import expect_column_accepted_values
 
-    result = expect_column_accepted_values(data, "event_type", ["view", "cart", "purchase", "remove"])
+    result = expect_column_accepted_values(
+        data, "event_type", ["view", "cart", "purchase", "remove"]
+    )
     assert result, "event_type contains unexpected values"
     return result
 
 
 @bauplan.expectation()
 @bauplan.python("3.11")
-def test_staging_positive_prices(data=bauplan.Model("staging", columns=["price"])):
+def test_staging_positive_prices(
+    data: Annotated[
+        pa.Table,
+        bauplan.Model("staging", projection_schema=PriceExpectationColumns),
+    ],
+) -> bool:
     """
     price should not be negative — session_metrics sums it for session_revenue.
     Severity: WARN (a few negative prices from refunds are possible but unusual;
@@ -82,7 +153,9 @@ def test_staging_positive_prices(data=bauplan.Model("staging", columns=["price"]
 
 @bauplan.expectation()
 @bauplan.python("3.11")
-def test_staging_minimum_rows(data=bauplan.Model("staging")):
+def test_staging_minimum_rows(
+    data: Annotated[pa.Table, bauplan.Model("staging")],
+) -> bool:
     """
     staging must have a meaningful number of rows — fewer than 100 indicates
     a broken upstream source or overly aggressive filter.
@@ -102,7 +175,12 @@ def test_staging_minimum_rows(data=bauplan.Model("staging")):
 
 @bauplan.expectation()
 @bauplan.python("3.11")
-def test_sessions_unique(data=bauplan.Model("session_metrics", columns=["user_session"])):
+def test_sessions_unique(
+    data: Annotated[
+        pa.Table,
+        bauplan.Model("session_metrics", projection_schema=SessionIdExpectationColumns),
+    ],
+) -> bool:
     """
     user_session must be unique in session_metrics — it's the grain of the table.
     Severity: FAIL (duplicate sessions double-count revenue in daily_summary).
@@ -110,13 +188,22 @@ def test_sessions_unique(data=bauplan.Model("session_metrics", columns=["user_se
     from bauplan.standard_expectations import expect_column_all_unique
 
     result = expect_column_all_unique(data, "user_session")
-    assert result, "user_session has duplicates — daily_summary revenue will be inflated"
+    assert result, (
+        "user_session has duplicates — daily_summary revenue will be inflated"
+    )
     return result
 
 
 @bauplan.expectation()
 @bauplan.python("3.11")
-def test_sessions_no_null_revenue(data=bauplan.Model("session_metrics", columns=["session_revenue"])):
+def test_sessions_no_null_revenue(
+    data: Annotated[
+        pa.Table,
+        bauplan.Model(
+            "session_metrics", projection_schema=SessionRevenueExpectationColumns
+        ),
+    ],
+) -> bool:
     """
     session_revenue must not be null — daily_summary sums it.
     Severity: FAIL (null revenue values cause SUM to silently exclude rows).
@@ -136,7 +223,12 @@ def test_sessions_no_null_revenue(data=bauplan.Model("session_metrics", columns=
 
 @bauplan.expectation()
 @bauplan.python("3.11", pip={"polars": "1.15.0"})
-def test_daily_summary_freshness(data=bauplan.Model("daily_summary", columns=["date"])):
+def test_daily_summary_freshness(
+    data: Annotated[
+        pa.Table,
+        bauplan.Model("daily_summary", projection_schema=SummaryDateExpectationColumns),
+    ],
+) -> bool:
     """
     Most recent date must be within 3 days of today — the executive dashboard
     shows daily trends and stale data causes incorrect business decisions.
@@ -145,11 +237,12 @@ def test_daily_summary_freshness(data=bauplan.Model("daily_summary", columns=["d
     """
     from datetime import datetime, timedelta
 
-    import polars as pl
+    import polars as pl  # ty: ignore[unresolved-import]
 
-    df = pl.from_arrow(data)
+    df = pl.DataFrame(data)
     max_date = df.select(pl.col("date").max()).item()
-    threshold = datetime.now() - timedelta(days=3)
+    # The schema declares a timezone-naive timestamp, so compare local wall times
+    threshold = datetime.now() - timedelta(days=3)  # noqa: DTZ005
     is_fresh = max_date >= threshold
     if not is_fresh:
         print(f"WARNING: daily_summary is stale — most recent date is {max_date}")
@@ -158,7 +251,12 @@ def test_daily_summary_freshness(data=bauplan.Model("daily_summary", columns=["d
 
 @bauplan.expectation()
 @bauplan.python("3.11")
-def test_daily_summary_no_null_dates(data=bauplan.Model("daily_summary", columns=["date"])):
+def test_daily_summary_no_null_dates(
+    data: Annotated[
+        pa.Table,
+        bauplan.Model("daily_summary", projection_schema=SummaryDateExpectationColumns),
+    ],
+) -> bool:
     """
     date must not be null — it's the primary key of the summary table.
     Severity: FAIL (null dates make rows invisible in time-based dashboards).
@@ -173,15 +271,19 @@ def test_daily_summary_no_null_dates(data=bauplan.Model("daily_summary", columns
 @bauplan.expectation()
 @bauplan.python("3.11")
 def test_daily_summary_reasonable_conversion(
-    data=bauplan.Model("daily_summary", columns=["conversion_rate"]),
-):
+    data: Annotated[
+        pa.Table,
+        bauplan.Model(
+            "daily_summary", projection_schema=ConversionRateExpectationColumns
+        ),
+    ],
+) -> bool:
     """
-    Average conversion rate should be below 100% — values above that indicate
-    a calculation bug (more purchases than sessions is impossible).
+    Average conversion rate must be at most 100%, including days when every session converts.
     Severity: FAIL (this means the pipeline logic is wrong, not just bad data).
     """
-    from bauplan.standard_expectations import expect_column_mean_smaller_than
+    from bauplan.standard_expectations import expect_column_mean_smaller_or_equal_than
 
-    result = expect_column_mean_smaller_than(data, "conversion_rate", 100.0)
-    assert result, "conversion_rate exceeds 100% — calculation bug in session_metrics"
+    result = expect_column_mean_smaller_or_equal_than(data, "conversion_rate", 100.0)
+    assert result, "conversion_rate exceeds 100%: calculation bug in daily_summary"
     return result
