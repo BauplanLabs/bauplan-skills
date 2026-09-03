@@ -59,6 +59,12 @@ Generates data quality check code in two forms: pipeline expectations (`expectat
 
 **When to use:** Adding quality gates to a pipeline or ingestion workflow.
 
+### bauplan-migrate-to-typed-sdk
+
+Migrate an existing codebase using Bauplan < 0.3.0 to the Bauplan SDK 0.3.0+ which features type annotations.
+
+**When to use:** Migrating older codebases to the typed SDK.
+
 ## How It Works
 
 Each skill is a structured workflow that Claude follows autonomously. Skills use the Bauplan Python SDK and CLI for all data operations. Key principles:
@@ -80,6 +86,7 @@ Each skill is a structured workflow that Claude follows autonomously. Skills use
 | bauplan-safe-ingestion | `skills/bauplan-safe-ingestion/` |
 | bauplan-debug-and-fix-pipeline | `skills/bauplan-debug-and-fix-pipeline/` |
 | bauplan-data-quality-checks | `skills/bauplan-data-quality-checks/` |
+| bauplan-migrate-to-typed-sdk | `skills/bauplan-migrate-to-typed-sdk/` |
 
 ### Files
 
@@ -103,6 +110,9 @@ plugins/bauplan/
       SKILL.md               # Quality check generation
       ingestion_validation.py    # Example: WAP validation
       pipeline-expectations.py   # Example: pipeline expectations
+    bauplan-migrate-to-typed-sdk/
+      SKILL.md               # Migration skill
+      examples.md            # Comprehensive set of examples 
   README.md
 ```
 

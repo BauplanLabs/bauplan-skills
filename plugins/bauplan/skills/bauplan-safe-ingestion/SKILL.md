@@ -294,8 +294,8 @@ When unsure about a method signature, CLI flag, or concept, fetch the relevant d
 
 **Relevant guides and concept pages:**
 - Import data: `https://docs.bauplanlabs.com/tutorial/import.md`
-- Schema conflicts: `https://docs.bauplanlabs.com/concepts/schema-conflicts.md`
-- Handle casting programmatically: `https://docs.bauplanlabs.com/concepts/schema-conflicts.md`
+- Schema conflicts: `https://docs.bauplanlabs.com/common-scenarios/schema-conflicts.md`
+- Handle casting programmatically: `https://docs.bauplanlabs.com/common-scenarios/schema-conflicts.md`
 - Data branches: `https://docs.bauplanlabs.com/concepts/git-for-data/data-branches.md`
 - Tables: `https://docs.bauplanlabs.com/concepts/tables.md`
 - Namespaces: `https://docs.bauplanlabs.com/concepts/namespaces.md`
