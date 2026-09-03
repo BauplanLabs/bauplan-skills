@@ -87,7 +87,7 @@ def account_summary(
 ```
 
 - `filter=` is unchanged: still a SQL-like string (compatible with Apache Datafusion), still supports `$param` templating. The new stub types it as `LiteralString`, so it must stay a literal (no f-strings, no variables).
-- One projection schema class per input. Distinct class names within a file; collisions across files are fine.
+- One projection schema class per input. Distinct class names across files.
 - The new `Model` is a dataclass with only `name`, `projection_schema`, `filter`. The old kwargs `ref`, `connector`, `connector_config_key`, `connector_config_uri` no longer exist and have no equivalent: a model using them cannot be migrated mechanically. Stop and report it.
 
 ## 4. Decorator `columns=[...]` to a return annotation
@@ -134,7 +134,6 @@ class SurvivalColumns(bauplan.TableSchema):
         bauplan.Float64,
         bauplan.TableField(
             doc="A passenger's age in years.",
-            lineage="titanic['Age']",
         ),
     ]
     Survived: bauplan.Int64
@@ -142,8 +141,8 @@ class SurvivalColumns(bauplan.TableSchema):
 
 Rules:
 
-- Schema classes must inherit directly from `TableSchema`. Any other base silently fails registration and the run errors with `returns unknown schema "<Name>"`.
-- Give every schema class a one-line docstring saying what the projection or output represents.
+- Schema classes must inherit directly from `TableSchema`. Without `TableSchema`, the class is assumed to be a custom class instead of a schema contract. Then, if the class is used as a schema contract the run errors with `returns unknown schema "<Name>"`.
+- Give every schema class a docstring saying what the projection or output represents. Keep it concise and meaningful.
 - A bare type (`Survived: Int64`) is enough when there is no metadata. Use `Annotated[Type, TableField(...)]` to attach `doc`, `title`, `lineage`, or `nullable`.
 - Available field types: `Bool`, `Int32`, `Int64`, `Float64`, `Decimal128`, `String`, `Binary`, `Date32`, `Date64`, `TimestampMicro`, `TimestampNano`, `TimestampMicroUTC`, `TimestampNanoUTC`. There is no unsigned or 32-bit float type; map `float`/`double` source columns to `Float64` and cast unsigned integers to a signed type in the model body (see pattern 9).
 - Mapping from the `TYPE` column printed by `bauplan table get`:
@@ -165,8 +164,8 @@ Rules:
 | Binary | binary | binary |
 
 - Nested types (`list<...>`, `struct<...>`, `map<...>`) have no field type. A model whose output contains a nested column (e.g. an `array_agg` result, an embeddings vector) keeps no return annotation at all; annotations are opt-in per model, so the rest of the pipeline can still be typed. Flag these models in the final report.
-- Parameterized types use subscript syntax, never a call: `Decimal128[4, 2]` (precision, scale). `Decimal128(4, 2)` is invalid.
-- `lineage` documents where a field comes from. Reference a catalog table with the string form `lineage="titanic['Age']"`, or another schema class in the same file with a live reference `lineage=TripColumns['pickup_datetime']`. When the migrated field's type differs from its source column, drop the `lineage` rather than declaring a conflicting one.
+- Parameterized types use subscript syntax, never a call: `Decimal128[4, 2]` (precision, scale). `Decimal128(4, 2)` is invalid. Add `  # noqa` to the end of the line; type checkers may otherwise throw errors because the literal value is not wrapped in the `Literal` type (as in `Literal[4]`).
+- `lineage` documents where a field comes from. Reference another schema class in the same file with a live reference `lineage=TripColumns['pickup_datetime']` or as a type forward `lineage="TripColumns['pickup_datetime']"`. When the migrated field's type differs from its source column, drop the `lineage` rather than declaring a conflicting one.
 
 ## 6. Expectations
 
