@@ -160,7 +160,7 @@ Run parameters use plain Python types in annotations, for example `rate: Annotat
 #### Docstrings with Output Schema
 Every Python model should have a docstring describing the transformation and showing the output table structure as an ASCII table. If the table is too wide, show only key columns; if values are too large, truncate them.
 
-This docstring is published metadata, not just a comment: it is written to Iceberg as the table's `comment` and shown by `bauplan table get`, which also prints a `DOC` column carrying each field's `TableField(doc=...)`. When a model has no docstring the output schema's docstring is used instead. Both are passed through `inspect.cleandoc`, so indentation is normalized and a whitespace-only doc means no documentation at all. Write them as documentation the reader of the catalog will see.
+This docstring is published metadata, not just a comment: it is written to Iceberg as the table's `comment`, and each field's `TableField(doc=...)` is written as that column's doc. Neither is surfaced by `bauplan table get` in 0.3.0, which prints only `NAME`, `REQUIRED` and `TYPE`: do not expect a `DOC` column there. When a model has no docstring the output schema's docstring is used instead. Both are passed through `inspect.cleandoc`, so indentation is normalized and a whitespace-only doc means no documentation at all. Write them as documentation the reader of the catalog will see.
 
 #### I/O Pushdown with `projection_schema` and `filter`
 Use `projection_schema` and `filter` in `bauplan.Model()` to restrict the data read at the storage level. Declare only needed columns and their types in a projection `TableSchema`. The supported `Model` arguments are `name`, `projection_schema`, and `filter`.
