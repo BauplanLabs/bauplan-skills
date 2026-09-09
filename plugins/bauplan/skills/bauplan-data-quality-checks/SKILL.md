@@ -46,7 +46,7 @@ Ensure the required packages are installed:
 
 Ensure the environment has a typed SDK build (0.3.0+). Typed declarations are only available with SDK 0.3.0+: older versions are *not* compatible. Use that same environment for all CLI commands and verify connectivity with `bauplan info`. Models declare their own runtime dependencies via `@bauplan.python('3.11', pip={...})`; annotation imports require `pyarrow` locally too.
 
-**Do not use pandas.** Bauplan's `client.query()` returns a PyArrow table directly — no `.to_arrow()` call needed. In pipeline expectations, model inputs arrive as Arrow tables too. Polars reads Arrow natively with zero-copy (`pl.DataFrame(table)`). Pandas requires a full data copy and is slower.
+**Do not use pandas.** Bauplan's `client.query()` returns a PyArrow table directly: no `.to_arrow()` call needed. In pipeline expectations, model inputs arrive as Arrow tables too. Polars reads Arrow natively with zero-copy (`pl.DataFrame(table)`). Pandas requires a full data copy and is slower.
 
 ## Writing Effective Checks
 

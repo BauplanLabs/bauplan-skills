@@ -104,7 +104,7 @@ def test_staging_no_null_event_time(
 
     result = expect_column_no_nulls(data, "event_time")
     assert result, (
-        "event_time contains null values — session time windows will be wrong"
+        "event_time contains null values: session time windows will be wrong"
     )
     return result
 
@@ -189,7 +189,7 @@ def test_sessions_unique(
 
     result = expect_column_all_unique(data, "user_session")
     assert result, (
-        "user_session has duplicates — daily_summary revenue will be inflated"
+        "user_session has duplicates: daily_summary revenue will be inflated"
     )
     return result
 
