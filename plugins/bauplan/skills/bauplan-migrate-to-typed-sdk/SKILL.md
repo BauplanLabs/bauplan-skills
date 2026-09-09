@@ -42,7 +42,7 @@ Get the username by running `bauplan info`.
 
 Before starting, you need to find all the Bauplan projects that need migration. A Bauplan project is a folder containing `bauplan_project.yml` or `bauplan_project.yaml`.
 
-You can find them using e.g. `find . -name 'bauplan_project.yml' -o -name 'bauplan_project.yaml'`. 
+You can find them using e.g. `find . -name 'bauplan_project.yml' -o -name 'bauplan_project.yaml'`.
 
 ## Migration Workflow
 
@@ -63,7 +63,7 @@ Two constructs have no equivalent in the typed SDK. If found, report them to the
 - `bauplan.Model(...)` using `ref`, `connector`, `connector_config_key`, or `connector_config_uri`: the new `Model` is a dataclass accepting only `name`, `projection_schema`, `filter`.
 - A `filter=` built from an f-string or variable: the new `filter` must be a string literal (`$param` templating inside the literal is fine).
 - The legacy decorators `@bauplan.resources()`, `@bauplan.extras()` are not supported anymore and need to be removed. Confirm with user.
-- The use of `filter=` on models now applies only to tables read from the catalog; when applied to other models (nodes in the DAG) it results in an error. This is not a hard-blocker since one can move the logic inside the body of the function. 
+- The use of `filter=` on models now applies only to tables read from the catalog; when applied to other models (nodes in the DAG) it results in an error. This is not a hard-blocker since one can move the logic inside the body of the function.
 
 ### Step 3: Discover column types
 
