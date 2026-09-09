@@ -33,7 +33,7 @@ The complete old-to-new pattern catalog with real code is in [examples.md](examp
 
 ## CRITICAL: Branch Safety
 
-> **NEVER run pipelines on `main` branch.**. Always checkout to a test branch first `bauplan checkout -b <username>.<branch_name>`.
+> **NEVER run pipelines on `main` branch.** Always checkout to a test branch first: `bauplan checkout -b <username>.<branch_name> --from-ref main`.
 > ALWAYS validate the migrated pipeline on a separate data branch.
 
 Get the username by running `bauplan info`.
@@ -58,7 +58,7 @@ Read every `models.py`, `expectations.py`, other `*.py` model files, `*.sql` fil
 
 ### Step 2: Check for blockers
 
-Two constructs have no equivalent in the typed SDK. If found, report them to the user and exclude those models from the mechanical migration:
+The constructs below have no direct equivalent in the typed SDK. If found, report them to the user and exclude the affected models from the mechanical migration:
 
 - `bauplan.Model(...)` using `ref`, `connector`, `connector_config_key`, or `connector_config_uri`: the new `Model` is a dataclass accepting only `name`, `projection_schema`, `filter`.
 - A `filter=` built from an f-string or variable: the new `filter` must be a string literal (`$param` templating inside the literal is fine).
