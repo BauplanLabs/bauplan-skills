@@ -292,12 +292,12 @@ After editing annotated code, type check before you rerun: `uv run ty check` (or
 For typed pipelines, a dry run checks declarations and schema references; a full run is required to validate actual Arrow output types against their contracts.
 
 ```bash
-# Preferred: strict mode, from the debug branch
-bauplan run --project-dir <dir> --ref <debug_branch> --strict
+# Preferred: straight from the debug branch, strict mode is the default
+bauplan run --project-dir <dir> --ref <debug_branch>
 
 # Fallback: dry run first, then full run
-bauplan run --project-dir <dir> --ref <debug_branch> --dry-run --strict
-bauplan run --project-dir <dir> --ref <debug_branch> --strict
+bauplan run --project-dir <dir> --ref <debug_branch> --dry-run
+bauplan run --project-dir <dir> --ref <debug_branch>
 ```
 
 After a green run: if Step 3 queries revealed data anomalies (e.g., wrong types, unexpected nulls), re-execute those queries to confirm the anomalies are resolved. Record before vs. after evidence.

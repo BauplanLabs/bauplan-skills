@@ -241,8 +241,8 @@ Key mechanics:
 - Expectations run as DAG nodes during `bauplan run`, after the model they depend on completes.
 - They receive the model's output as an Arrow table — same as a downstream model would.
 - `True` = pass, `False` = fail.
-- `assert` makes the failure halt the pipeline. Without `assert`, the result is logged but execution continues.
-- `--strict` mode (`bauplan run --strict`) makes all expectation failures halt the run immediately.
+- `assert` makes the failure halt the pipeline, whatever the run options are.
+- Strict mode is on by default, so returning `False` without an `assert` also fails the run. `bauplan run --no-strict` is what turns those into logged failures that let the run finish.
 
 ### Using bauplan.standard_expectations
 
@@ -398,10 +398,10 @@ Type check first: the annotations on expectations and projection schemas make `u
 uv run ty check
 
 # Validate declarations and schema references without materializing
-bauplan run --dry-run --strict
+bauplan run --dry-run
 
 # Execute with blocking expectations and output contract validation
-bauplan run --strict
+bauplan run
 ```
 
 After a run, expectation results appear in the run output. Failed expectations show the assertion message. Use `bauplan job logs <job_id>` to review results from a previous run.

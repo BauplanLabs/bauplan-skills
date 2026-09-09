@@ -62,6 +62,8 @@ Two constructs have no equivalent in the typed SDK. If found, report them to the
 
 - `bauplan.Model(...)` using `ref`, `connector`, `connector_config_key`, or `connector_config_uri`: the new `Model` is a dataclass accepting only `name`, `projection_schema`, `filter`.
 - A `filter=` built from an f-string or variable: the new `filter` must be a string literal (`$param` templating inside the literal is fine).
+- The legacy decorators `@bauplan.resources()`, `@bauplan.extras()` are not supported anymore and need to be removed. Confirm with user.
+- The use of `filter=` on models now applies only to tables read from the catalog; when applied to other models (nodes in the DAG) it results in an error. This is not a hard-blocker since one can move the logic inside the body of the function. 
 
 ### Step 3: Discover column types
 
@@ -110,8 +112,8 @@ Work on an isolated branch: `bauplan checkout -b <username>.<branch> --from-ref 
 Validation ladder, from cheapest to most complete:
 
 1. **Static checks**, only if installed (`which ruff` / `which ty`): `ruff check` and `ty check` (or `uv run ty check`) on the project. This is the payoff of the migration: the typed SDK ships stubs, so a wrong kwarg, a misspelled field type, or a schema class that does not resolve fails here in seconds, locally, before any job reaches the platform. Never skip it.
-2. **Dry run**: `bauplan run --dry-run --strict`. Schema contracts are enforced on every run, there is no flag to opt in.
-3. **Full run** on the isolated branch: `bauplan run --strict`. Runtime dtype mismatches (unsigned counts, float widths) and extra output columns only surface here, as `ModelOutputContractError`.
+2. **Dry run**: `bauplan run --dry-run`. Schema contracts are enforced on every run, there is no flag to opt in, and strict mode is the default so a warning fails the run.
+3. **Full run** on the isolated branch: `bauplan run`. Runtime dtype mismatches (unsigned counts, float widths) and extra output columns only surface here, as `ModelOutputContractError`.
 
 Known error signatures and their causes:
 
@@ -136,9 +138,10 @@ Summarize for the user: files rewritten, schema classes created (and which table
 - [ ] Step 2: Report blockers (`connector`/`ref` kwargs, non-literal filters)
 - [ ] Step 3: Read source table schemas → `bauplan table get <namespace>.<table>`
 - [ ] Step 4: Upgrade project dependency to the typed SDK (0.3.x)
-- [ ] Step 5: Rewrite files following [examples.md](examples.md)
-- [ ] Step 6: Create validation branch → `ty check` → dry run → full run → iterate until green
-- [ ] Step 7: Report changes, flagged expectations, and leftovers to the user
+- [ ] Step 5: Upgrade the python version to >= 3.11 (**mandatory**)
+- [ ] Step 6: Rewrite files following [examples.md](examples.md)
+- [ ] Step 7: Create validation branch → `ty check` → dry run → full run → iterate until green
+- [ ] Step 8: Report changes, flagged expectations, and leftovers to the user
 
 ## Reference
 
