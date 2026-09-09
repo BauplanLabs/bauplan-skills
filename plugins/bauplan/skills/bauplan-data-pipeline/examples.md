@@ -667,11 +667,11 @@ bauplan table get bauplan.raw_ecommerce_events
 # 2. Create a branch to run
 bauplan checkout -b <username>.<branch_name>
 
-# 3. Dry run
-bauplan run --dry-run --strict
+# 3. Dry run (strict mode is the default)
+bauplan run --dry-run
 
 # 4. Execute pipeline
-bauplan run --strict
+bauplan run
 
 # 5. Verify outputs
 bauplan table get bauplan.daily_summary

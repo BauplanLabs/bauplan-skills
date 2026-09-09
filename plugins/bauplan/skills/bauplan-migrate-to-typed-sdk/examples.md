@@ -166,7 +166,7 @@ Rules:
 | Binary | binary | binary |
 
 - Nested types (`list<...>`, `struct<...>`, `map<...>`) and decimals have no field type. Annotate those fields as `Any` from `typing` (an `array_agg` result, an embeddings vector, a `decimal(10, 2)` price): the column keeps its real type at runtime, the contract just does not pin it, and every other field in the schema stays typed. Flag every `Any` field in the final report.
-- `lineage` documents where a field comes from, and it may only point at another schema class in the same file, as a live reference `lineage=TripColumns['pickup_datetime']` or a type forward `lineage="TripColumns['pickup_datetime']"`. Lineage into the catalog is not supported: `lineage="titanic['Age']"` fails with `references unknown schema "titanic" and catalog lineage not currently supported`. When the migrated field's type differs from its source column, drop the `lineage` rather than declaring a conflicting one.
+- `lineage` documents where a field comes from, and it may only point at another schema class in the same file, `lineage=TripColumns['pickup_datetime']`. Lineage into the catalog is not supported: `lineage=titanic['Age']` fails with `references unknown schema "titanic" and catalog lineage not currently supported`. When the migrated field's type differs from its source column, drop the `lineage` rather than declaring a conflicting one.
 
 ## 6. Expectations
 
@@ -229,7 +229,7 @@ The old runtime accepted an Arrow table, a Polars or pandas DataFrame, or a list
 
 ```python
     return pa.Table.from_pylist(rows)          # was: return rows (list of dicts)
-    return pa.Table.from_pandas(df)            # was: return df (pandas)
+    return pa.Table.from_pandas(df, preserve_index=False)            # was: return df (pandas)
     return relation.to_arrow_table()                # was: relation.arrow() (duckdb)
     return df.to_arrow()                            # polars: unchanged
 ```
@@ -375,7 +375,7 @@ Note how the output schema declares what the function actually produces: `Age` s
 
 Everything below is unchanged between 0.1.x/0.2.x and 0.3.0+. Leave it alone:
 
-- `@bauplan.python(version, pip={...})`, `@bauplan.expectation()`, `@bauplan.resources()`, `@bauplan.extras()`
+- `@bauplan.python(version, pip={...})`, `@bauplan.expectation()` (however, do ensure the python version is always passed, or else it will fail!)
 - `@bauplan.model()` kwargs other than `columns`: `name`, `materialization_strategy`, `cache_strategy`, `partitioned_by`, `overwrite_filter`, `internet_access`
 - Decorator ordering (`@bauplan.model` above or below `@bauplan.python`, both valid)
 - `filter=` syntax and `$param` templating

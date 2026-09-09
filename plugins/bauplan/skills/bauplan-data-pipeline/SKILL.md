@@ -39,7 +39,7 @@ Before writing a pipeline, you MUST gather the following from the user:
 2. **Source tables** (required): Which tables from the lakehouse should be used as inputs? Verify they exist with `bauplan table get <namespace>.<table_name>`.
 3. **Output tables** (required): Which tables should be materialized as final outputs?
 4. **Materialization strategy** (optional, default: `REPLACE`): Should output tables use `REPLACE` or `APPEND`?
-5. **Strict mode** (optional): Should the pipeline run in strict mode?
+5. **Strict mode** (optional, default: on): Should runtime warnings and failing expectations be allowed to pass, which needs `--no-strict`?
 
 **If any required item is missing, ask the user before writing any code.**
 
@@ -167,6 +167,8 @@ Use `projection_schema` and `filter` in `bauplan.Model()` to restrict the data r
 - `projection_schema`: a `TableSchema` class containing only the fields your model needs.
 - `filter`: a literal SQL-like string to restrict rows (e.g., `filter="price > 0"`). `$param` interpolation is supported; Python variables and f-strings are not.
 
+**Note well**: the use of `filter=` on models now applies only to tables read from the catalog; when applied to other models (nodes in the DAG) it results in an error. Move this filter inside the body of the function. 
+
 See [examples.md](examples.md#io-pushdown-with-column-selection-and-filtering) for a complete guide.
 
 #### Use Polars or DuckDB, Not Pandas
@@ -223,11 +225,13 @@ bauplan query "SELECT * FROM <namespace>.<output_table> LIMIT 5"
 ```
 
 ### Strict Mode
-Append `--strict` to make expectation failures fail the run. In strict mode, the run fails immediately on output schema mismatches or expectation failures instead of logging a warning and continuing:
+Strict mode is on by default: the run fails immediately on runtime warnings, which include output schema mismatches and failing expectations. Pass `--no-strict` when you want those reported without failing the run, for example while iterating on a check you expect to fail:
 ```bash
-bauplan run --dry-run --strict
-bauplan run --strict
+bauplan run --dry-run --no-strict
+bauplan run --no-strict
 ```
+
+`--no-strict` is a bare flag, it takes no value, and there is no `--strict` flag to pass. In the Python SDK the equivalent is `client.run(..., strict=False)`; `strict`, `cache`, and `transaction` are booleans that all default to `True`.
 
 ## Materialization Checklist
 After writing models, verify each model has the correct `materialization_strategy`:
