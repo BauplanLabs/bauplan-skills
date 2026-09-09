@@ -77,9 +77,11 @@ Map catalog types to the field types listed in [examples.md](examples.md#5-decla
 
 Nested types (list, struct, map) and decimals have no field type at all. Annotate those fields as `bauplan.Any`, the SDK's passthrough type rather than `typing.Any`: the column keeps its real type at runtime, the contract just does not pin it. This applies to output schemas and to `projection_schema` classes migrated from an old `columns=[...]` list, so a nested or decimal column is never a reason to drop a projection or a return annotation. Flag every `Any` field in the report.
 
-### Step 4: Upgrade the SDK dependency
+### Step 4: Upgrade Python and the SDK dependency
 
-Check whether the project uses `uv` (`pyproject.toml` / `uv.lock`) or plain pip, then upgrade `bauplan` to the newest release. Do not trust the version number alone: verify the installed package actually ships the typed SDK by probing it:
+The typed SDK requires Python >= 3.11 and the schema classes use `X | None` union syntax, so raising the interpreter is mandatory, not a preference: on an older interpreter the install will not resolve. Bump `requires-python` in `pyproject.toml` to `>=3.11` (and `uv python pin 3.11` if the project uses uv) before touching the SDK version.
+
+Then check whether the project uses `uv` (`pyproject.toml` / `uv.lock`) or plain pip, and upgrade `bauplan` to the newest release. Do not trust the version number alone: verify the installed package actually ships the typed SDK by probing it:
 
 ```bash
 uv run python -c "import bauplan; bauplan.TableSchema"
@@ -137,11 +139,10 @@ Summarize for the user: files rewritten, schema classes created (and which table
 - [ ] Step 1: Inventory all models, expectations, inputs, parameters, returns
 - [ ] Step 2: Report blockers (`connector`/`ref` kwargs, non-literal filters)
 - [ ] Step 3: Read source table schemas → `bauplan table get <namespace>.<table>`
-- [ ] Step 4: Upgrade project dependency to the typed SDK (0.3.x)
-- [ ] Step 5: Upgrade the python version to >= 3.11 (**mandatory**)
-- [ ] Step 6: Rewrite files following [examples.md](examples.md)
-- [ ] Step 7: Create validation branch → `ty check` → dry run → full run → iterate until green
-- [ ] Step 8: Report changes, flagged expectations, and leftovers to the user
+- [ ] Step 4: Upgrade Python to >= 3.11 (**mandatory**), then the project dependency to the typed SDK (0.3.x)
+- [ ] Step 5: Rewrite files following [examples.md](examples.md)
+- [ ] Step 6: Create validation branch → `ty check` → dry run → full run → iterate until green
+- [ ] Step 7: Report changes, flagged expectations, and leftovers to the user
 
 ## Reference
 
