@@ -113,7 +113,7 @@ def clean_trips(
     | 2022-12-01 08:00:00 | 123          | 5.2        |
     """
     # Import processing dependencies inside the function for its model environment
-    import polars as pl  # ty: ignore[unresolved-import]
+    import polars as pl
 
     df = pl.DataFrame(data)
     df = df.filter(pl.col('trip_miles') > 0.0)
@@ -145,6 +145,7 @@ Use the field type mapping as below:
 | TimestampMicroUTC | timestamp('us', tz='UTC') | timestamptz |
 | TimestampNanoUTC | timestamp('ns', tz='UTC') | timestamptz_ns (Iceberg v3 only) |
 | Binary | binary | binary |
+| Any | passthrough, whatever the artifact carries | any type, not validated |
 
 Return an actual `pa.Table`.
 
@@ -152,7 +153,7 @@ Nullability is part of the type, not a parameter: a bare `bauplan.Int64` declare
 
 The two positions are decided differently. A projection schema must mirror the source: an optional source column cannot satisfy a required field, so read the `REQUIRED` column of `bauplan table get` and use `| None` for every column it does not mark required, which is most of them in practice. An output schema is your declaration about the data the model produces: it is checked by counting actual nulls in the returned table, not by reading Arrow's nullability flag, and it becomes the written column's nullability in the catalog. `| None` is the safe default there too; declare an output column required only when the transformation guarantees no nulls, such as a count or other aggregate, a `fill_null`, or a column the filter cannot leave null.
 
-Cast unsigned aggregation counts to signed integers and align float widths and timestamp units with the declared contract. Decimal columns and nested list, struct, and map fields have no supported schema type: annotate them as `Any` (the column still carries its real Arrow type at runtime, it is just not pinned by the contract) and report the limitation.
+Cast unsigned aggregation counts to signed integers and align float widths and timestamp units with the declared contract. Decimal columns and nested list, struct, and map fields have no supported schema type: annotate them as `bauplan.Any`, the SDK's own passthrough type and not `typing.Any` (the column still carries its real Arrow type at runtime, it is just not pinned by the contract), and report the limitation.
 
 Run parameters use plain Python types in annotations, for example `rate: Annotated[float, bauplan.Parameter("rate")]`, matching the parameter's `type` in `bauplan_project.yml`.
 
@@ -203,7 +204,7 @@ project:
 Always run from inside the project directory (the folder containing `bauplan_project.yml`).
 
 ### Type Checking
-The annotations are what make a pipeline checkable without running it, so use them. Before any `bauplan` command, run a type checker from the project directory: `uv run ty check`, or `ty check` if the project is not managed by uv. Unresolved imports for model runtime dependencies (polars, duckdb, local utility modules) are expected noise, since those live in the remote model environment and not locally: silence them at the import line with `# ty: ignore[unresolved-import]`, or the equivalent suppression for whichever checker the project uses, so a clean report means clean and a real error stands out. Add the suppression only when the checker actually reports the import: if the package happens to be installed locally, the same comment turns into `unused-ignore-comment` instead.
+The annotations are what make a pipeline checkable without running it, so use them. Before any `bauplan` command, run a type checker from the project directory: `uv run ty check`, or `ty check` if the project is not managed by uv. Model runtime dependencies (polars, duckdb, local utility modules) live in the remote model environment, so the checker reports them as unresolved imports. Fix that by adding them to the project's dev dependencies, `uv add --dev polars`, ideally at the version pinned in `@bauplan.python(pip={...})`: it only affects the local checker, never what the model runs with, and it keeps the report clean without suppression comments scattered through the models. Unresolved `bauplan` symbols are a different matter and always a real error.
 
 ### Dry Run
 A dry run validates the pipeline without materializing tables: DAG wiring, source tables, SQL, and schema references. Always dry-run before a full run.

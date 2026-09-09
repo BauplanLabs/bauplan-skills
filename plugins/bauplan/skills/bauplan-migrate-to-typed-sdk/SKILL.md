@@ -75,7 +75,7 @@ The old `columns=[...]` lists carry names only; `TableSchema` classes need types
 
 Map catalog types to the field types listed in [examples.md](examples.md#5-declaring-tableschema-classes). There is no unsigned or 32-bit float field type; use `Float64` for floats and cast unsigned integers in the model body. Read the `REQUIRED` column too: a bare field type declares a required column, so every source column that is not required migrates to `Type | None`.
 
-Nested types (list, struct, map) and decimals have no field type at all. Annotate those fields as `Any`: the column keeps its real type at runtime, the contract just does not pin it. This applies to output schemas and to `projection_schema` classes migrated from an old `columns=[...]` list, so a nested or decimal column is never a reason to drop a projection or a return annotation. Flag every `Any` field in the report.
+Nested types (list, struct, map) and decimals have no field type at all. Annotate those fields as `bauplan.Any`, the SDK's passthrough type rather than `typing.Any`: the column keeps its real type at runtime, the contract just does not pin it. This applies to output schemas and to `projection_schema` classes migrated from an old `columns=[...]` list, so a nested or decimal column is never a reason to drop a projection or a return annotation. Flag every `Any` field in the report.
 
 ### Step 4: Upgrade the SDK dependency
 
@@ -124,7 +124,7 @@ Known error signatures and their causes:
 - `only the data type may be marked optional`: the `| None` was wrapped around the whole `Annotated[...]` instead of sitting on the data type inside it.
 - `while parsing your code`: syntax-level problem in the rewritten file; re-read the corresponding pattern in examples.md.
 - `ModelOutputContractError` on a full run: the returned table does not match the contract exactly, either because the output schema declares columns or types the function does not produce, or because the function returns a column the schema does not declare; fix the schema or add a cast (pattern 9).
-- `ty` reporting unresolved imports for the model's runtime dependencies (duckdb, polars, local utils modules) is expected noise: those live in the remote model environment, not locally. Add `# ty: ignore[unresolved-import]` on those import lines to keep the check clean, but only where the import is actually reported: on a machine that has the package installed, the same comment is flagged as `unused-ignore-comment`. Unresolved `bauplan` symbols are real errors; unresolved third-party modules are not.
+- `ty` reporting unresolved imports for the model's runtime dependencies (duckdb, polars, local utils modules) is expected: those live in the remote model environment, not locally. Add them to the project's dev dependencies (`uv add --dev polars`) so the checker resolves them; the local install has no effect on the model environment declared by `@bauplan.python(pip={...})`. Unresolved `bauplan` symbols are real errors; unresolved third-party modules are not.
 
 Iterate on errors until dry run and full run both pass. Then clean up: delete the validation branch if the user does not want to keep it.
 

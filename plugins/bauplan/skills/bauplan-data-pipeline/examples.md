@@ -227,7 +227,7 @@ def purchase_analytics(
     |------------------|---------------------|---------------|---------------|-----------------|
     | abc123           | 2024-01-01 10:00:00 | 3             | 150.00        | 50.00           |
     """
-    import duckdb  # ty: ignore[unresolved-import]
+    import duckdb
 
     con = duckdb.connect()
     con.register("events", events)
@@ -293,7 +293,7 @@ def trips_with_zones(
     |--------------|---------------------|------------|-----------|---------|
     | abc123       | 2024-01-01 10:00:00 | 5.2        | Manhattan | Midtown |
     """
-    import polars as pl  # ty: ignore[unresolved-import]
+    import polars as pl
 
     trips_df = pl.DataFrame(trips)
     zones_df = pl.DataFrame(zones)
@@ -451,7 +451,7 @@ Key patterns used:
 - Docstrings with output schema as ASCII tables
 
 ```python
-from typing import Annotated, Any
+from typing import Annotated
 
 import bauplan
 import pyarrow as pa
@@ -477,7 +477,7 @@ class StagingSchema(bauplan.TableSchema):
     event_type: bauplan.String | None
     product_id: bauplan.String | None
     brand: bauplan.String | None
-    price: Any  # decimal column, no schema type available
+    price: bauplan.Any  # decimal column, no schema type available
     user_id: bauplan.String | None
     user_session: bauplan.String | None
     event_time: bauplan.TimestampMicro | None
@@ -490,7 +490,7 @@ class SessionEventColumns(bauplan.TableSchema):
     event_time: bauplan.TimestampMicro | None
     product_id: bauplan.String | None
     event_type: bauplan.String | None
-    price: Any  # decimal column, no schema type available
+    price: bauplan.Any  # decimal column, no schema type available
 
 
 class SessionMetricsSchema(bauplan.TableSchema):
@@ -502,7 +502,7 @@ class SessionMetricsSchema(bauplan.TableSchema):
     total_events: bauplan.Int64 | None
     products_viewed: bauplan.Int64 | None
     purchases: bauplan.Int64 | None
-    session_revenue: Any  # decimal column, no schema type available
+    session_revenue: bauplan.Any  # decimal column, no schema type available
 
 
 class DailySessionColumns(bauplan.TableSchema):
@@ -510,7 +510,7 @@ class DailySessionColumns(bauplan.TableSchema):
 
     session_start: bauplan.TimestampMicro | None
     purchases: bauplan.Int64 | None
-    session_revenue: Any  # decimal column, no schema type available
+    session_revenue: bauplan.Any  # decimal column, no schema type available
 
 
 class DailySummarySchema(bauplan.TableSchema):
@@ -520,7 +520,7 @@ class DailySummarySchema(bauplan.TableSchema):
     total_sessions: bauplan.Int64 | None
     total_purchases: bauplan.Int64 | None
     conversion_rate: bauplan.Float64 | None
-    total_revenue: Any  # decimal column, no schema type available
+    total_revenue: bauplan.Any  # decimal column, no schema type available
     avg_session_revenue: bauplan.Float64 | None
 
 
@@ -545,7 +545,7 @@ def staging(
     | evt_001  | view       | prod_123   | Nike    | 99.99  | usr_001 | sess_abc     | 2024-01-01 10:00:00 |
     | evt_002  | purchase   | prod_456   | Unknown | 149.50 | usr_002 | sess_def     | 2024-01-01 10:05:00 |
     """
-    import polars as pl  # ty: ignore[unresolved-import]
+    import polars as pl
 
     df = pl.DataFrame(raw)
 
@@ -577,7 +577,7 @@ def session_metrics(
     |--------------|---------------------|---------------------|--------------|-----------------|-----------|-----------------|
     | sess_abc     | 2024-01-01 10:00:00 | 2024-01-01 10:30:00 | 15           | 5               | 2         | 150.00          |
     """
-    import polars as pl  # ty: ignore[unresolved-import]
+    import polars as pl
 
     df = pl.DataFrame(staging)
 
@@ -618,7 +618,7 @@ def daily_summary(
     |------------|----------------|-----------------|-----------------|---------------|---------------------|
     | 2024-01-01 | 500            | 150             | 30.00           | 15000.00      | 30.00               |
     """
-    import polars as pl  # ty: ignore[unresolved-import]
+    import polars as pl
 
     df = pl.DataFrame(sessions)
 
