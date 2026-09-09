@@ -23,7 +23,7 @@ from bauplan import (
 ```
 
 - `import bauplan` stays: the decorators are still used as `@bauplan.model`, `@bauplan.python`, `@bauplan.expectation`.
-- `from typing import Any` is needed on top of `Annotated` when a schema has a nested or decimal field (see section 5).
+- `Any` is a bauplan type, not `typing.Any`: reach it as `bauplan.Any` or add it to the flat `from bauplan import (...)`. It is needed only when a schema has a nested or decimal field (see section 5).
 - `import pyarrow as pa` is now required in every model file, even if the body never calls PyArrow directly, because input and output annotations name `pa.Table`. Any alias works as long as it matches the annotations, but `pa` is the conventional one.
 - The flat `from bauplan import (...)` covers the typing symbols. Fully qualified `bauplan.TableSchema` / `bauplan.Int64` is equally valid; pick one style per file and stay consistent.
 
@@ -147,7 +147,7 @@ Rules:
 - A bare type (`Survived: Int64`) is enough when there is no metadata. Use `Annotated[Type, TableField(...)]` to attach `doc` or `lineage`; those are the only two parameters, and any other one fails with `Unexpected TableField parameter: <name>`. `title` and `nullable` were both removed.
 - Nullability moved into the type: `Int64` is a **required** column, `Int64 | None` an optional one. In an `Annotated` field the union belongs on the data type, `Annotated[Int64 | None, TableField(...)]`; wrapping the whole annotation is rejected with "only the data type may be marked optional".
 - A projection schema must mirror its source, and an optional source column cannot satisfy a required field, so migrate every column the `REQUIRED` column of `bauplan table get` does not mark required to `| None`. An output schema is checked by counting actual nulls in the returned data, so keep a column required only where the transformation guarantees it; when migrating old code that made no such promise, `| None` is the safe default.
-- Available field types: `Bool`, `Int32`, `Int64`, `Float64`, `String`, `Binary`, `Date32`, `Date64`, `TimestampMicro`, `TimestampNano`, `TimestampMicroUTC`, `TimestampNanoUTC`. There is no unsigned or 32-bit float type; map `float`/`double` source columns to `Float64` and cast unsigned integers to a signed type in the model body (see pattern 9).
+- Available field types: `Bool`, `Int32`, `Int64`, `Float64`, `String`, `Binary`, `Date32`, `Date64`, `TimestampMicro`, `TimestampNano`, `TimestampMicroUTC`, `TimestampNanoUTC`, plus `Any` as the passthrough for columns that have no field type. There is no unsigned or 32-bit float type; map `float`/`double` source columns to `Float64` and cast unsigned integers to a signed type in the model body (see pattern 9).
 - Mapping from the `TYPE` column printed by `bauplan table get`:
 
 | SDK type | Arrow type | Iceberg type (catalog) |
@@ -164,8 +164,9 @@ Rules:
 | TimestampMicroUTC | timestamp('us', tz='UTC') | timestamptz |
 | TimestampNanoUTC | timestamp('ns', tz='UTC') | timestamptz_ns (Iceberg v3 only) |
 | Binary | binary | binary |
+| Any | passthrough, whatever the artifact carries | any type, not validated |
 
-- Nested types (`list<...>`, `struct<...>`, `map<...>`) and decimals have no field type. Annotate those fields as `Any` from `typing` (an `array_agg` result, an embeddings vector, a `decimal(10, 2)` price): the column keeps its real type at runtime, the contract just does not pin it, and every other field in the schema stays typed. Flag every `Any` field in the final report.
+- Nested types (`list<...>`, `struct<...>`, `map<...>`) and decimals have no field type. Annotate those fields as `bauplan.Any` (an `array_agg` result, an embeddings vector, a `decimal(10, 2)` price): the column keeps its real type at runtime, the contract just does not pin it, and every other field in the schema stays typed. Flag every `Any` field in the final report.
 - `lineage` documents where a field comes from, and it may only point at another schema class in the same file, `lineage=TripColumns['pickup_datetime']`. Lineage into the catalog is not supported: `lineage=titanic['Age']` fails with `references unknown schema "titanic" and catalog lineage not currently supported`. When the migrated field's type differs from its source column, drop the `lineage` rather than declaring a conflicting one.
 
 ## 6. Expectations
@@ -274,7 +275,7 @@ def survival_rate_by_age(
     ),
 ):
     """Bins passengers by age and returns survival rate per bin."""
-    import polars as pl  # ty: ignore[unresolved-import]
+    import polars as pl
 
     df = pl.DataFrame(passengers)
     return (
@@ -340,7 +341,7 @@ def survival_rate_by_age(
     ],
 ) -> Annotated[pa.Table, SurvivalRateSchema]:
     """Bins passengers by age and returns survival rate per bin."""
-    import polars as pl  # ty: ignore[unresolved-import]
+    import polars as pl
 
     df = pl.DataFrame(passengers)
     return (

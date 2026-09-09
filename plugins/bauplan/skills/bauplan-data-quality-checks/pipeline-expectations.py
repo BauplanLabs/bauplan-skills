@@ -14,7 +14,7 @@ Place this file as expectations.py in the pipeline project directory,
 alongside models.py and bauplan_project.yml.
 """
 
-from typing import Annotated, Any
+from typing import Annotated
 
 import bauplan
 import pyarrow as pa
@@ -42,13 +42,13 @@ class EventTypeExpectationColumns(bauplan.TableSchema):
 class PriceExpectationColumns(bauplan.TableSchema):
     """Staged decimal price checked before session aggregation."""
 
-    price: Any  # decimal column, no schema type available
+    price: bauplan.Any  # decimal column, no schema type available
 
 
 class SessionRevenueExpectationColumns(bauplan.TableSchema):
     """Aggregated decimal revenue checked before daily summarization."""
 
-    session_revenue: Any  # decimal column, no schema type available
+    session_revenue: bauplan.Any  # decimal column, no schema type available
 
 
 class SummaryDateExpectationColumns(bauplan.TableSchema):
@@ -237,7 +237,7 @@ def test_daily_summary_freshness(
     """
     from datetime import datetime, timedelta
 
-    import polars as pl  # ty: ignore[unresolved-import]
+    import polars as pl
 
     df = pl.DataFrame(data)
     max_date = df.select(pl.col("date").max()).item()

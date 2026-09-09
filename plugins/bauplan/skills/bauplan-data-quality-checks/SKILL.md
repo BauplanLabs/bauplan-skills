@@ -309,7 +309,7 @@ def test_data_freshness(
     ],
 ) -> bool:
     """Most recent date must be within 2 days for the daily dashboard."""
-    import polars as pl  # ty: ignore[unresolved-import]
+    import polars as pl
     from datetime import datetime, timedelta
 
     df = pl.DataFrame(data)
@@ -351,7 +351,7 @@ def test_dates_ordered(
     ],
 ) -> bool:
     """dropoff must be after pickup for valid trip durations."""
-    import polars as pl  # ty: ignore[unresolved-import]
+    import polars as pl
 
     df = pl.DataFrame(data)
     violations = df.filter(pl.col('dropoff_datetime') < pl.col('pickup_datetime'))
@@ -385,13 +385,13 @@ def clean_orders(
     return data
 ```
 
-Output schemas are exhaustive and enforced on every run with no flag to opt in: the returned table must carry exactly the declared columns, so a missing column, an extra one, or a dtype mismatch fails the run with `ModelOutputContractError`. Value-level expectations still check ranges, uniqueness, freshness, and business rules. Flag existing dtype-only expectations as potentially redundant when the corresponding contract covers them; propose replacements without deleting checks silently. Decimal columns and nested output fields have no supported schema type and are annotated `Any`, so the contract does not constrain them and they still need explicit checks.
+Output schemas are exhaustive and enforced on every run with no flag to opt in: the returned table must carry exactly the declared columns, so a missing column, an extra one, or a dtype mismatch fails the run with `ModelOutputContractError`. Value-level expectations still check ranges, uniqueness, freshness, and business rules. Flag existing dtype-only expectations as potentially redundant when the corresponding contract covers them; propose replacements without deleting checks silently. Decimal columns and nested output fields have no supported schema type and are annotated `bauplan.Any`, so the contract does not constrain them and they still need explicit checks.
 
 SQL models use `-- bauplan: output_schema = SchemaName` referencing a `TableSchema` in the sibling `models.py`.
 
 ### Running and Verifying
 
-Type check first: the annotations on expectations and projection schemas make `uv run ty check` (or `ty check`) a local gate that catches misspelled field types, unknown `bauplan` symbols, and schema classes that do not resolve, in seconds and without submitting a job. Imports of model runtime dependencies (polars, duckdb) resolve only in the remote environment, so silence those with `# ty: ignore[unresolved-import]` at the import line, but only when the checker actually reports them: if the package is installed locally, that comment becomes `unused-ignore-comment` instead. Only then go to the platform.
+Type check first: the annotations on expectations and projection schemas make `uv run ty check` (or `ty check`) a local gate that catches misspelled field types, unknown `bauplan` symbols, and schema classes that do not resolve, in seconds and without submitting a job. Imports of model runtime dependencies (polars, duckdb) resolve only in the remote environment, so add them to the project's dev dependencies (`uv add --dev polars`) to keep the report clean. Only then go to the platform.
 
 ```bash
 # First gate: annotations are checked locally, before any job is submitted
