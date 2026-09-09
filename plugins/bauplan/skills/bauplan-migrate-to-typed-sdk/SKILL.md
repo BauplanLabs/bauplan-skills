@@ -154,6 +154,6 @@ When unsure about a signature or concept, fetch the doc page via `WebFetch` rath
 - Semantic annotations: `https://docs.bauplanlabs.com/concepts/semantic_annotations.md`
 - Models: `https://docs.bauplanlabs.com/concepts/models.md`
 - Expectations: `https://docs.bauplanlabs.com/concepts/expectations.md`
-- Parameters: `https://docs.bauplanlabs.com/common-scenarios/parameterized-runs`
+- Parameters: `https://docs.bauplanlabs.com/common-scenarios/parameterized-runs.md`
 
 **CLI:** self-documenting via `bauplan --help` and `bauplan <command> --help`.

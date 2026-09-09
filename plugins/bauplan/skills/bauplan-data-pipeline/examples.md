@@ -680,7 +680,7 @@ bauplan query "SELECT * FROM bauplan.daily_summary LIMIT 5"
 
 ## Available Built-in Expectations
 
-> **Note**: The table below shows example expectations from `bauplan.standard_expectations`. For the latest and complete list, consult the official SDK documentation: https://docs.bauplanlabs.com/reference/bauplan_standard_expectations
+> **Note**: The table below shows example expectations from `bauplan.standard_expectations`. For the latest and complete list, consult the official SDK documentation: https://docs.bauplanlabs.com/reference/bauplan-standard-expectations.md
 
 | Function                                   | Description                           |
 |--------------------------------------------|---------------------------------------|
