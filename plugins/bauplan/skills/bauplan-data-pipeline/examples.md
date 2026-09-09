@@ -308,7 +308,7 @@ def trips_with_zones(
 ```
 ## I/O Pushdown with Column Selection and Filtering
 
-> **CRITICAL**: Use `projection_schema` to select needed fields and a literal `filter` to restrict rows when applicable. This restricts data at the storage level, dramatically reducing data transfer and improving performance. `$param` templating inside the literal is supported; f-strings and filter variables are not. 
+> **CRITICAL**: Use `projection_schema` to select needed fields and a literal `filter` to restrict rows when applicable. This restricts data at the storage level, dramatically reducing data transfer and improving performance. `$param` templating inside the literal is supported; f-strings and filter variables are not.
 
 ```python
 class DecemberTripColumns(bauplan.TableSchema):

@@ -168,7 +168,7 @@ Use `projection_schema` and `filter` in `bauplan.Model()` to restrict the data r
 - `projection_schema`: a `TableSchema` class containing only the fields your model needs.
 - `filter`: a literal SQL-like string to restrict rows (e.g., `filter="price > 0"`). `$param` interpolation is supported; Python variables and f-strings are not.
 
-**Note well**: the use of `filter=` on models now applies only to tables read from the catalog; when applied to other models (nodes in the DAG) it results in an error. Move this filter inside the body of the function. 
+**Note well**: the use of `filter=` on models now applies only to tables read from the catalog; when applied to other models (nodes in the DAG) it results in an error. Move this filter inside the body of the function.
 
 See [examples.md](examples.md#io-pushdown-with-column-selection-and-filtering) for a complete guide.
 

@@ -112,7 +112,7 @@ plugins/bauplan/
       pipeline-expectations.py   # Example: pipeline expectations
     bauplan-migrate-to-typed-sdk/
       SKILL.md               # Migration skill
-      examples.md            # Comprehensive set of examples 
+      examples.md            # Comprehensive set of examples
   README.md
 ```
 
