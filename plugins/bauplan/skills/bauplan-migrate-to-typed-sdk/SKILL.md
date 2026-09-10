@@ -54,6 +54,7 @@ Read every `models.py`, `expectations.py`, other `*.py` model files, `*.sql` fil
 - every `bauplan.Model(...)` input and its `columns` / `filter` / other kwargs
 - every `bauplan.Parameter(...)` and its `type:` in `bauplan_project.yml`
 - every `columns=[...]` on a `@bauplan.model()` decorator
+- every `internet_access=...` on a `@bauplan.model()` decorator
 - every model return statement and what it returns (arrow, polars, pandas, list of dicts)
 
 ### Step 2: Check for blockers
@@ -64,6 +65,7 @@ The constructs below have no direct equivalent in the typed SDK. If found, repor
 - A `filter=` built from an f-string or variable: the new `filter` must be a string literal (`$param` templating inside the literal is fine).
 - The legacy decorators `@bauplan.resources()`, `@bauplan.extras()` are not supported anymore and need to be removed. Confirm with user.
 - The use of `filter=` on models now applies only to tables read from the catalog; when applied to other models (nodes in the DAG) it results in an error. This is not a hard-blocker since one can move the logic inside the body of the function.
+- The `@bauplan.model()` kwarg `internet_access` is not supported anymore. Flag to the user.
 
 ### Step 3: Discover column types
 
@@ -113,7 +115,7 @@ Work on an isolated branch: `bauplan checkout -b <username>.<branch> --from-ref 
 
 Validation ladder, from cheapest to most complete:
 
-1. **Static checks**, only if installed (`which ruff` / `which ty`): `ruff check` and `ty check` (or `uv run ty check`) on the project. This is the payoff of the migration: the typed SDK ships stubs, so a wrong kwarg, a misspelled field type, or a schema class that does not resolve fails here in seconds, locally, before any job reaches the platform. Never skip it.
+1. **Static checks**, only if installed (`which ruff` / `which ty`, or use `uv run ruff` or `uv run ty`): `ruff check` and `ty check` on the project. This is the payoff of the migration: the typed SDK ships stubs, so a wrong kwarg, a misspelled field type, or a schema class that does not resolve fails here in seconds, locally, before any job reaches the platform. Never skip it.
 2. **Dry run**: `bauplan run --dry-run`. Schema contracts are enforced on every run, there is no flag to opt in, and strict mode is the default so a warning fails the run.
 3. **Full run** on the isolated branch: `bauplan run`. Runtime dtype mismatches (unsigned counts, float widths) and extra output columns only surface here, as `ModelOutputContractError`.
 
@@ -151,7 +153,7 @@ When unsure about a signature or concept, fetch the doc page via `WebFetch` rath
 **Python SDK:** `https://docs.bauplanlabs.com/reference/bauplan.md`
 
 **Relevant concept pages:**
-- Semantic annotations: `https://docs.bauplanlabs.com/concepts/semantic_annotations.md`
+- Semantic annotations: `https://docs.bauplanlabs.com/concepts/semantic-annotations.md`
 - Models: `https://docs.bauplanlabs.com/concepts/models.md`
 - Expectations: `https://docs.bauplanlabs.com/concepts/expectations.md`
 - Parameters: `https://docs.bauplanlabs.com/common-scenarios/parameterized-runs.md`

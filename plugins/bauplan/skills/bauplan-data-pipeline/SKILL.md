@@ -226,7 +226,7 @@ bauplan query "SELECT * FROM <namespace>.<output_table> LIMIT 5"
 ```
 
 ### Strict Mode
-Strict mode is on by default: the run fails immediately on runtime warnings, which include output schema mismatches and failing expectations. Pass `--no-strict` when you want those reported without failing the run, for example while iterating on a check you expect to fail:
+Strict mode is on by default: the run fails immediately on failing expectations. Pass `--no-strict` when you want those reported without failing the run, for example while iterating on a check you expect to fail:
 ```bash
 bauplan run --dry-run --no-strict
 bauplan run --no-strict
@@ -306,7 +306,7 @@ When unsure about a method signature, CLI flag, or concept, fetch the relevant d
 **Standard expectations:** `https://docs.bauplanlabs.com/reference/bauplan-standard-expectations.md`
 
 **Relevant concept pages:**
-- Semantic annotations: `https://docs.bauplanlabs.com/concepts/semantic_annotations.md`
+- Semantic annotations: `https://docs.bauplanlabs.com/concepts/semantic-annotations.md`
 - Models: `https://docs.bauplanlabs.com/concepts/models.md`
 - Pipelines: `https://docs.bauplanlabs.com/concepts/pipelines.md`
 - Projects: `https://docs.bauplanlabs.com/concepts/projects.md`
@@ -320,4 +320,4 @@ When unsure about a method signature, CLI flag, or concept, fetch the relevant d
 - `bauplan --help` — lists all available commands
 - `bauplan <command> --help` — shows arguments and options for a specific command (e.g., `bauplan run --help`, `bauplan table --help`)
 
-**Validating generated Python:** After writing or updating `models.py` or `expectations.py`, run `ruff check` and `ruff format` to catch syntax errors and style issues, and `uv run ty check` (or `ty check`) to catch type errors: these verify the code compiles and the annotations and SDK calls are well-formed without executing it. Only run these if they are installed (check with `which ruff` / `which ty`). This is the fast first gate, always before `bauplan run --dry-run`.
+**Validating generated Python:** After writing or updating `models.py` or `expectations.py`, run `ruff check` and `ruff format` (or `uv run ruff check/format`) to catch syntax errors and style issues, and `uv run ty check` (or `ty check`) to catch type errors: these verify the code compiles and the annotations and SDK calls are well-formed without executing it. Only run these if they are installed (check with `which ruff` / `which ty`, or use `uv run ruff` or `uv run ty`). This is the fast first gate, always before `bauplan run --dry-run`.

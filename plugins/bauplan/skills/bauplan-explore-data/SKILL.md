@@ -391,4 +391,4 @@ When unsure about a method signature, CLI flag, or concept, fetch the relevant d
 - `bauplan --help` — lists all available commands
 - `bauplan <command> --help` — shows arguments and options for a specific command (e.g., `bauplan query --help`, `bauplan table --help`)
 
-**Validating generated Python:** After writing or updating a Python script, run `ruff check` and `ruff format` to catch syntax errors and style issues, and `ty` to catch type errors — these verify the code compiles and the SDK calls are well-formed without executing it. Only run these if they are installed (check with `which ruff` / `which ty`).
+**Validating generated Python:** After writing or updating a Python script, run `ruff check` and `ruff format` to catch syntax errors and style issues, and `ty` to catch type errors — these verify the code compiles and the SDK calls are well-formed without executing it. Only run these if they are installed (check with `which ruff` / `which ty`, or use `uv run ruff` or `uv run ty`).
