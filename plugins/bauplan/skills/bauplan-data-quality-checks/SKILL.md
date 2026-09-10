@@ -527,7 +527,7 @@ When unsure about a method signature, CLI flag, or concept, fetch the relevant d
 **Standard expectations:** `https://docs.bauplanlabs.com/reference/bauplan-standard-expectations.md`
 
 **Relevant concept pages:**
-- Semantic annotations: `https://docs.bauplanlabs.com/concepts/semantic_annotations.md`
+- Semantic annotations: `https://docs.bauplanlabs.com/concepts/semantic-annotations.md`
 - Expectations: `https://docs.bauplanlabs.com/concepts/expectations.md`
 
 **Full doc index:** `https://docs.bauplanlabs.com/llms.txt`
@@ -536,4 +536,4 @@ When unsure about a method signature, CLI flag, or concept, fetch the relevant d
 - `bauplan --help` — lists all available commands
 - `bauplan <command> --help` — shows arguments and options for a specific command (e.g., `bauplan run --help`, `bauplan job --help`)
 
-**Validating generated Python:** After writing or updating `expectations.py` or validation code, run `ruff check` and `ruff format` to catch syntax errors and style issues, and `uv run ty check` (or `ty check`) to catch type errors: these verify the code compiles and the annotations and SDK calls are well-formed without executing it. Only run these if they are installed (check with `which ruff` / `which ty`).
+**Validating generated Python:** After writing or updating `expectations.py` or validation code, run `ruff check` and `ruff format` (or `uv run ruff check/format`) to catch syntax errors and style issues, and `uv run ty check` (or `ty check`) to catch type errors: these verify the code compiles and the annotations and SDK calls are well-formed without executing it. Only run these if they are installed (check with `which ruff` / `which ty`, or use `uv run ruff` or `uv run ty`).

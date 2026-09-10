@@ -122,7 +122,8 @@ def daily_segment_stats(...) -> Annotated[pa.Table, DailySegmentStats]:
 
 - Every migrated model gets a return annotation, including models that declared no `columns` at all in the old code. This is not optional: a model without `-> Annotated[pa.Table, SchemaType]` fails at parse time with `Model must have a valid return type annotation`, and a bare `-> pa.Table` fails with `Model return type annotation must be of the form: Annotated[pyarrow.Table, SchemaType]`.
 - The old wildcard `columns=['*']` has no equivalent: enumerate the actual output columns.
-- All other `@bauplan.model()` kwargs are unchanged: `name`, `materialization_strategy`, `cache_strategy`, `partitioned_by`, `overwrite_filter`, `internet_access`.
+- The `@bauplan.model()` kwarg `internet_access` is not supported anymore.
+- All other `@bauplan.model()` kwargs are unchanged: `name`, `materialization_strategy`, `cache_strategy`, `partitioned_by`, `overwrite_filter`.
 - The declared output schema is exhaustive and enforced on every run, with no flag to opt in: the function must return exactly the declared columns, with the declared types and nullability. An extra column fails the run with `ModelOutputContractError` just as a missing one does.
 
 ## 5. Declaring `TableSchema` classes
@@ -377,7 +378,7 @@ Note how the output schema declares what the function actually produces: `Age` s
 Everything below is unchanged between 0.1.x/0.2.x and 0.3.0+. Leave it alone:
 
 - `@bauplan.python(version, pip={...})`, `@bauplan.expectation()` (however, do ensure the python version is always passed, or else it will fail!)
-- `@bauplan.model()` kwargs other than `columns`: `name`, `materialization_strategy`, `cache_strategy`, `partitioned_by`, `overwrite_filter`, `internet_access`
+- `@bauplan.model()` kwargs other than `columns`: `name`, `materialization_strategy`, `cache_strategy`, `partitioned_by`, `overwrite_filter`
 - Decorator ordering (`@bauplan.model` above or below `@bauplan.python`, both valid)
 - `filter=` syntax and `$param` templating
 - `bauplan_project.yml` structure (no new keys required by the migration)
