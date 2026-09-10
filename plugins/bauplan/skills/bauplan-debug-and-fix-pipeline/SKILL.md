@@ -287,7 +287,7 @@ Before rerunning, assess what you can actually prove:
 
 #### Execute
 
-After editing annotated code, type check before you rerun: `uv run ty check` (or `ty check`) in the project directory catches broken annotations, schema classes that do not resolve, and wrong SDK keywords locally, in seconds, so the rerun tests the fix instead of a typo.
+After editing annotated code, type check before you rerun: `uvx ty check` in the project directory catches broken annotations, schema classes that do not resolve, and wrong SDK keywords locally, in seconds, so the rerun tests the fix instead of a typo.
 
 For typed pipelines, a dry run checks declarations and schema references; a full run is required to validate actual Arrow output types against their contracts.
 
@@ -414,4 +414,4 @@ When unsure about a method signature, CLI flag, or concept, fetch the relevant d
 - `bauplan --help` — lists all available commands
 - `bauplan <command> --help` — shows arguments and options for a specific command (e.g., `bauplan job --help`, `bauplan run --help`, `bauplan branch --help`)
 
-**Validating Python fixes:** After editing pipeline code (models, expectations), run `ruff check` and `ruff format` (or `uv run ruff check/format`) to catch syntax errors, and `ty` to catch type errors before rerunning the pipeline. Only run these if they are installed (check with `which ruff` / `which ty`, or use `uv run ruff` or `uv run ty`).
+**Validating Python fixes:** After editing pipeline code (models, expectations), run `uvx ruff check` and `uvx ruff format` to catch syntax errors, and `uvx ty check` to catch type errors before rerunning the pipeline.

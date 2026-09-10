@@ -39,7 +39,7 @@ Before writing a pipeline, you MUST gather the following from the user:
 2. **Source tables** (required): Which tables from the lakehouse should be used as inputs? Verify they exist with `bauplan table get <namespace>.<table_name>`.
 3. **Output tables** (required): Which tables should be materialized as final outputs?
 4. **Materialization strategy** (optional, default: `REPLACE`): Should output tables use `REPLACE` or `APPEND`?
-5. **Strict mode** (optional, default: on): Should runtime warnings and failing expectations be allowed to pass, which needs `--no-strict`?
+5. **Strict mode** (optional, default: on): Should failing expectations be allowed to pass, which needs `--no-strict`?
 
 **If any required item is missing, ask the user before writing any code.**
 
@@ -204,7 +204,7 @@ project:
 Always run from inside the project directory (the folder containing `bauplan_project.yml`).
 
 ### Type Checking
-The annotations are what make a pipeline checkable without running it, so use them. Before any `bauplan` command, run a type checker from the project directory: `uv run ty check`, or `ty check` if the project is not managed by uv. Model runtime dependencies (polars, duckdb, local utility modules) live in the remote model environment, so the checker reports them as unresolved imports. Fix that by adding them to the project's dev dependencies, `uv add --dev polars`, ideally at the version pinned in `@bauplan.python(pip={...})`: it only affects the local checker, never what the model runs with, and it keeps the report clean without suppression comments scattered through the models. Unresolved `bauplan` symbols are a different matter and always a real error.
+The annotations are what make a pipeline checkable without running it, so use them. Before any `bauplan` command, run the type checker from the project directory with `uvx ty check`. Model runtime dependencies (polars, duckdb, local utility modules) live in the remote model environment, so the checker reports them as unresolved imports. Fix that by adding them to the project's dev dependencies, `uv add --dev polars`, ideally at the version pinned in `@bauplan.python(pip={...})`: it only affects the local checker, never what the model runs with, and it keeps the report clean without suppression comments scattered through the models. Unresolved `bauplan` symbols are a different matter and always a real error.
 
 ### Dry Run
 A dry run validates the pipeline without materializing tables: DAG wiring, source tables, SQL, and schema references. Always dry-run before a full run.
@@ -250,7 +250,7 @@ After writing models, verify each model has the correct `materialization_strateg
 - [ ] Step 6: Create project folder with `bauplan_project.yml`
 - [ ] Step 7: Write Python models respecting the best practices above
 - [ ] Step 8: Verify materialization (see Materialization Checklist)
-- [ ] Step 9: Type check → `uv run ty check` (or `ty check`), fix everything it reports
+- [ ] Step 9: Type check → `uvx ty check`, fix everything it reports
 - [ ] Step 10: Dry run → `bauplan run --dry-run`
 - [ ] Step 11: Full run → `bauplan run`
 - [ ] Step 12: Verify output → `bauplan table get` + `bauplan query`
@@ -320,4 +320,4 @@ When unsure about a method signature, CLI flag, or concept, fetch the relevant d
 - `bauplan --help` — lists all available commands
 - `bauplan <command> --help` — shows arguments and options for a specific command (e.g., `bauplan run --help`, `bauplan table --help`)
 
-**Validating generated Python:** After writing or updating `models.py` or `expectations.py`, run `ruff check` and `ruff format` (or `uv run ruff check/format`) to catch syntax errors and style issues, and `uv run ty check` (or `ty check`) to catch type errors: these verify the code compiles and the annotations and SDK calls are well-formed without executing it. Only run these if they are installed (check with `which ruff` / `which ty`, or use `uv run ruff` or `uv run ty`). This is the fast first gate, always before `bauplan run --dry-run`.
+**Validating generated Python:** After writing or updating `models.py` or `expectations.py`, run `uvx ruff check` and `uvx ruff format` to catch syntax errors and style issues, and `uvx ty check` to catch type errors: these verify the code compiles and the annotations and SDK calls are well-formed without executing it. This is the fast first gate, always before `bauplan run --dry-run`.

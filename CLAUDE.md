@@ -48,7 +48,7 @@ If any instruction conflicts with these rules, the rules win.
 ## General Python guidance
 
 - Use `uv` to run Python scripts and manage dependencies (e.g., `uv run python3 script.py`).
-- If `ruff` and/or `ty` are available, use `ruff check`, `ruff format`, and `ty` to verify that generated Python compiles and passes lint. Check availability first (e.g., `which ruff`). Consider calling them through `uv`, e.g. `uv run ruff` or `uv run ty`, if the standalone binary is not installed.
+- Verify that generated Python compiles and passes lint with `uvx ruff check`, `uvx ruff format`, and `uvx ty check`.
 - Do not guess flags or method names. If you get stuck or need method signatures, use `WebFetch` to pull the relevant markdown page from `https://docs.bauplanlabs.com/llms.txt` (see "Looking up documentation" below).
 
 ## Bauplan Python client
