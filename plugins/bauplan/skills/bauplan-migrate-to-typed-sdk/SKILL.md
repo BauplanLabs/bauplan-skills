@@ -5,6 +5,7 @@ allowed-tools:
   - Bash(bauplan:*)
   - Bash(uv:*)
   - Bash(pip:*)
+  - Bash(uvx:*)
   - Bash(ruff:*)
   - Bash(ty:*)
   - Read
@@ -115,8 +116,8 @@ Work on an isolated branch: `bauplan checkout -b <username>.<branch> --from-ref 
 
 Validation ladder, from cheapest to most complete:
 
-1. **Static checks**, only if installed (`which ruff` / `which ty`, or use `uv run ruff` or `uv run ty`): `ruff check` and `ty check` on the project. This is the payoff of the migration: the typed SDK ships stubs, so a wrong kwarg, a misspelled field type, or a schema class that does not resolve fails here in seconds, locally, before any job reaches the platform. Never skip it.
-2. **Dry run**: `bauplan run --dry-run`. Schema contracts are enforced on every run, there is no flag to opt in, and strict mode is the default so a warning fails the run.
+1. **Static checks**: `uvx ruff check` and `uvx ty check` on the project. This is the payoff of the migration: the typed SDK ships stubs, so a wrong kwarg, a misspelled field type, or a schema class that does not resolve fails here in seconds, locally, before any job reaches the platform. Never skip it.
+2. **Dry run**: `bauplan run --dry-run`. Schema contracts are enforced on every run, there is no flag to opt in, and strict mode is the default so a failing expectation halts the run.
 3. **Full run** on the isolated branch: `bauplan run`. Runtime dtype mismatches (unsigned counts, float widths) and extra output columns only surface here, as `ModelOutputContractError`.
 
 Known error signatures and their causes:
@@ -143,7 +144,7 @@ Summarize for the user: files rewritten, schema classes created (and which table
 - [ ] Step 3: Read source table schemas → `bauplan table get <namespace>.<table>`
 - [ ] Step 4: Upgrade Python to >= 3.11 (**mandatory**), then the project dependency to the typed SDK (0.3.x)
 - [ ] Step 5: Rewrite files following [examples.md](examples.md)
-- [ ] Step 6: Create validation branch → `ty check` → dry run → full run → iterate until green
+- [ ] Step 6: Create validation branch → `uvx ty check` → dry run → full run → iterate until green
 - [ ] Step 7: Report changes, flagged expectations, and leftovers to the user
 
 ## Reference
