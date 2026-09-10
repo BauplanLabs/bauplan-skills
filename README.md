@@ -2,10 +2,10 @@
 
 The recommended setup for developing on [Bauplan](https://www.bauplanlabs.com/) with AI coding assistants. This repo provides two things that work together:
 
-1. **Skills plugin** — task-specific workflows (build pipelines, ingest data, debug failures, etc.) that AI assistants can follow autonomously.
-2. **Context file** — project-level instructions (safety rules, CLI/SDK guidance, authentication) that ground every conversation in Bauplan best practices.
+1. **Skills plugin**: task-specific workflows (build pipelines, ingest data, debug failures, etc.) that AI assistants can follow autonomously.
+2. **Context file**: project-level instructions (safety rules, CLI/SDK guidance, authentication) that ground every conversation in Bauplan best practices.
 
-Install the skills for your AI assistant of choice, and copy or integrate the context file into your own repo for the baseline context. Both are part of the same workflow — AI-assisted development on Bauplan.
+Install the skills for your AI assistant of choice, and copy or integrate the context file into your own repo for the baseline context.
 
 ## Table of Contents
 
@@ -15,88 +15,73 @@ Install the skills for your AI assistant of choice, and copy or integrate the co
 - [Skills](#skills)
 - [License](#license)
 
----
-
 ## Claude Code
 
 ### Install the plugin
 
-1. Add the marketplace:
-```
-/plugin marketplace add https://github.com/BauplanLabs/bauplan-skills
-```
+Install Bauplan Skills in Claude Code by running:
 
-Restart Claude Code to make sure the changes are visible.
-
-2. Open the plugin installer:
-```
-/plugin
+```sh
+claude plugin marketplace add BauplanLabs/bauplan-skills
+claude plugin install bauplan@bauplan-skills
 ```
 
-3. Select **Browse and install plugins** → select **bauplan-skills** → press `Space` to select **bauplan** → press `i` to install.
+To update to the latest version, run:
 
-4. Restart Claude Code.
+```sh
+claude plugin update bauplan@bauplan-skills
+```
 
 ### Use the CLAUDE.md
 
 Copy `CLAUDE.md` from this repo into the root of your project, or merge its contents into your existing `CLAUDE.md`:
 
-```bash
+```sh
 curl -o CLAUDE.md https://raw.githubusercontent.com/BauplanLabs/bauplan-skills/main/CLAUDE.md
 ```
 
-This gives Claude Code the baseline context it needs — safety rules, CLI vs SDK guidance, authentication setup, and pointers to the skills — even before any skill is triggered.
-
----
+This gives Claude Code the baseline context it needs (safety rules, CLI vs SDK guidance, authentication setup, and pointers to the skills) even before any skill is triggered.
 
 ## Codex
 
-### Install skills
+### Install the plugin
 
-Inside Codex, run the skill installer pointing at the Bauplan skills directory:
+Install Bauplan Skills in Codex by running:
 
+```sh
+codex plugin marketplace add BauplanLabs/bauplan-skills
+codex plugin add bauplan@bauplan-skills
 ```
-$skill-installer https://github.com/BauplanLabs/bauplan-skills/tree/main/plugins/bauplan/skills
+
+To update to the latest version, run:
+
+```sh
+codex plugin marketplace upgrade bauplan-skills
 ```
-
-Codex will fetch and install the Bauplan skills automatically. Restart Codex once the installer completes.
-
-To verify the installation, run `/skills` and select **List skills** — you should see the Bauplan skills listed.
 
 ### Use the AGENTS.md
 
 Codex uses `AGENTS.md` as its project context file. Copy it into the root of your project:
 
-```bash
+```sh
 curl -o AGENTS.md https://raw.githubusercontent.com/BauplanLabs/bauplan-skills/main/CLAUDE.md
 ```
 
----
-
 ## Cursor
 
-### Install skills
+### Install the plugin
 
-Go to **Settings > Cursor Settings > Rules, Skills, Subagents**.
+Install Bauplan Skills in Cursor by following the instructions in this [video](https://youtu.be/TD7gME7JnZw?t=248), or by going to **Settings > Customize > Plugins > Add > From GitHub Repository**, entering `https://github.com/BauplanLabs/bauplan-skills`, and clicking **Add**.
 
-From there you have two options:
-
-- **If you already use Claude Code** with Bauplan skills installed: enable the **Include third-party Plugins, Skills and Other Configs** toggle. Bauplan skills will appear automatically — no additional import needed.
-
-- **If you only use Cursor**: in the Skills section, click **New** and prompt the agent to import Bauplan skills from:
-  ```
-  https://github.com/BauplanLabs/bauplan-skills/tree/main/plugins/bauplan/skills
-  ```
+To update to the latest version, click **Refresh**.
 
 ### Use the AGENTS.md
 
 Cursor supports [granular rules](https://cursor.com/docs/rules), but `AGENTS.md` works too. Copy it into the root of your project:
 
-```bash
+```sh
 curl -o AGENTS.md https://raw.githubusercontent.com/BauplanLabs/bauplan-skills/main/CLAUDE.md
 ```
-
----
 
 ## Skills
 
