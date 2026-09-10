@@ -8,18 +8,18 @@ Bauplan is a serverless data lakehouse platform. It lets you build data pipeline
 
 ## Installation
 
-1. Add the marketplace:
-```
-/plugin marketplace add https://github.com/BauplanLabs/bauplan-skills
+Install Bauplan Skills in Claude Code by running:
+
+```sh
+claude plugin marketplace add BauplanLabs/bauplan-skills
+claude plugin install bauplan@bauplan-skills
 ```
 
-2. Install the plugin:
-```
-/plugin
-```
-Select **Browse and install plugins** → **bauplan-skills** → press `Space` to select **bauplan** → press `i` to install.
+To update to the latest version, run:
 
-3. Restart Claude Code.
+```sh
+claude plugin update bauplan@bauplan-skills
+```
 
 ## Skills
 
@@ -118,6 +118,6 @@ plugins/bauplan/
 
 ## Metadata
 
-- **Version:** 1.0.0
+- **Version:** 2.0.0
 - **Author:** [Bauplan Labs](https://www.bauplanlabs.com/)
 - **License:** MIT
