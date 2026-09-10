@@ -5,6 +5,6 @@
     "name": "Bauplan Labs",
     "email": "info@bauplanlabs.com"
   },
-  "version": "1.0.0",
+  "version": "2.0.0",
   "keywords": ["bauplan", "data-lakehouse", "data-pipeline", "iceberg", "data-quality", "data-ingestion", "write-audit-publish", "wap"]
 }
