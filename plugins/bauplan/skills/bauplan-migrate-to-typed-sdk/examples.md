@@ -147,7 +147,7 @@ Rules:
 - Give every schema class a docstring saying what the projection or output represents. Keep it concise and meaningful.
 - A bare type (`Survived: Int64`) is enough when there is no metadata. Use `Annotated[Type, TableField(...)]` to attach `doc` or `lineage`; those are the only two parameters, and any other one fails with `Unexpected TableField parameter: <name>`. `title` and `nullable` were both removed.
 - Nullability moved into the type: `Int64` is a **required** column, `Int64 | None` an optional one. In an `Annotated` field the union belongs on the data type, `Annotated[Int64 | None, TableField(...)]`; wrapping the whole annotation is rejected with "only the data type may be marked optional".
-- A projection schema must mirror its source, and an optional source column cannot satisfy a required field, so migrate every column the `REQUIRED` column of `bauplan table get` does not mark required to `| None`. An output schema is checked by counting actual nulls in the returned data, so keep a column required only where the transformation guarantees it; when migrating old code that made no such promise, `| None` is the safe default.
+- A projection schema must mirror its source, and an optional source column cannot satisfy a required field, so migrate every column that `bauplan table get` marks `NULLABLE true` to `| None`. An output schema is checked by counting actual nulls in the returned data, so keep a column required only where the transformation guarantees it; when migrating old code that made no such promise, `| None` is the safe default.
 - Available field types: `Bool`, `Int32`, `Int64`, `Float64`, `String`, `Binary`, `Date32`, `Date64`, `TimestampMicro`, `TimestampNano`, `TimestampMicroUTC`, `TimestampNanoUTC`, plus `Any` as the passthrough for columns that have no field type. There is no unsigned or 32-bit float type; map `float`/`double` source columns to `Float64` and cast unsigned integers to a signed type in the model body (see pattern 9).
 - Mapping from the `TYPE` column printed by `bauplan table get`:
 
@@ -258,6 +258,8 @@ SQL models declare their output schema with a directive comment referencing a `T
 -- bauplan: output_schema = TaxiModelSchema
 SELECT pickup_datetime, PULocationID FROM taxi_fhvhv
 ```
+
+Table documentation for the output of a SQL model can only come from the class docstring on the `output_schema` (see Pattern 12).
 
 ## 11. Complete before and after
 
@@ -373,7 +375,59 @@ def test_age(
 
 Note how the output schema declares what the function actually produces: `Age` stays `Float64` because `pl.col("Age").floor()` keeps the float dtype. Deriving the schema from the transformation, not from wishful thinking, is what makes the contract pass on a real run.
 
-## 12. Do not over-migrate
+## 12. Documentation
+
+Table documentation is set from the model's function docstring or the class docstring on its output schema (if there is no docstring on the function). Column documentation is set from the `doc` parameter of the `TableField` annotation.
+
+Bad:
+
+```python
+class TripColumns(bauplan.TableSchema):
+    """TripColumns schema."""
+
+    trip_time: Annotated[
+        bauplan.Int64 | None,
+        bauplan.TableField(
+            doc="The trip time.",
+        ),
+    ]
+    base_passenger_fare: Annotated[
+        bauplan.Float64 | None,
+        bauplan.TableField(
+            doc="The base passenger fare.",
+        ),
+    ]
+```
+
+Good:
+
+```python
+class TripColumns(bauplan.TableSchema):
+    """
+    Trip duration and fare components from `taxi_fhvhv`.
+
+    Fares are decomposed into components: no column holds total revenue.
+    """
+
+    trip_time: Annotated[
+        bauplan.Int64 | None,
+        bauplan.TableField(
+            doc="Trip duration, in seconds.",
+        ),
+    ]
+    base_passenger_fare: Annotated[
+        bauplan.Float64 | None,
+        bauplan.TableField(
+            doc="Fare in USD, before tolls and tax. Not total revenue.",
+        ),
+    ]
+```
+
+- A multiline docstring puts `"""` on its own line and has two parts: a concise, single-sentence overview, then the details that matter.
+- The bad version restates the column name and settles nothing: a reader still cannot tell whether `trip_time` is seconds or minutes, or whether the fare includes tolls.
+- See the **`bauplan-data-semantics`** skill for more guidelines and details for documentation to support a semantic layer.
+
+## 13. Do not over-migrate
 
 Everything below is unchanged between 0.1.x/0.2.x and 0.3.0+. Leave it alone:
 
