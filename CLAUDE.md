@@ -90,9 +90,12 @@ Bauplan publishes an LLM-friendly documentation index at `https://docs.bauplanla
 | Topic | URL |
 |-------|-----|
 | Python SDK reference | `https://docs.bauplanlabs.com/reference/bauplan.md` |
+| SDK types | `https://docs.bauplanlabs.com/reference/bauplan-sdk-types.md` |
+| Catalog types | `https://docs.bauplanlabs.com/reference/bauplan-schema.md` |
 | CLI reference | `https://docs.bauplanlabs.com/reference/cli.md` |
 | Standard expectations | `https://docs.bauplanlabs.com/reference/bauplan-standard-expectations.md` |
 | Models | `https://docs.bauplanlabs.com/concepts/models.md` |
+| Semantic annotations | `https://docs.bauplanlabs.com/concepts/semantic-annotations.md` |
 | Pipelines | `https://docs.bauplanlabs.com/concepts/pipelines.md` |
 | Tables | `https://docs.bauplanlabs.com/concepts/tables.md` |
 | Namespaces | `https://docs.bauplanlabs.com/concepts/namespaces.md` |
@@ -109,6 +112,16 @@ When unsure about a method, flag, or concept, fetch the relevant page rather tha
 **CLI:** The `bauplan` CLI is also self-documenting:
 - `bauplan --help` — lists all available commands
 - `bauplan <command> --help` — shows arguments and options for a specific command (e.g., `bauplan query --help`, `bauplan branch --help`)
+
+### Embedded data documentation
+
+In Bauplan, table-level and column-level documentation is accessible by the CLI and Python SDK. This documentation can hold any text the user would like, but it is best to use as a **semantic layer** that describes the intent and context of tables and columns to ensure correct usage of the data. It is stored in Iceberg and versioned per data branch, so a table documented on one branch may be bare on another.
+
+**With the CLI.** When the `bauplan table get ...` command is used, table-level documentation is first shown with the title `Table Documentation`. Column-level documentation is available in the `DOC` column, although it is truncated if longer than a fixed amount or if it spans more than one line. If the column-level documentation is truncated, a note is printed that will direct the user to use `-O json` to receive the full documentation. In the JSON output, table-level documentation is at `properties.comment` rather than a top-level key, and column-level documentation is at `fields[].doc`.
+
+**With the Python SDK.** When `bauplan.Client.get_table` is called, a `bauplan.schema.Table` instance is returned; the table-level documentation is accessible by the `bauplan.schema.Table.comment` property. The column-level documentation is accessible by the `bauplan.schema.TableField.doc` property, which is never truncated.
+
+**Authoring.** Documentation is only written for materialized models when running a pipeline. Table-level documentation is set from the model's function docstring if defined, or from the output schema's class docstring otherwise. Column-level documentation is set from the `doc` parameter of the `TableField` annotation. Both docstrings pass through `inspect.cleandoc`, so indentation is normalized and a whitespace-only docstring means no documentation at all.
 
 ## Skills
 
