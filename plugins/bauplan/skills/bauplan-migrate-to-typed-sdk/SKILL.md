@@ -68,45 +68,49 @@ The constructs below have no direct equivalent in the typed SDK. If found, repor
 - The use of `filter=` on models now applies only to tables read from the catalog; when applied to other models (nodes in the DAG) it results in an error. This is not a hard-blocker since one can move the logic inside the body of the function.
 - The `@bauplan.model()` kwarg `internet_access` is not supported anymore. Flag to the user.
 
-### Step 3: Discover column types
-
-The old `columns=[...]` lists carry names only; `TableSchema` classes need types.
-
-- For source tables identified in the previous step, read the catalog: `bauplan table get <namespace>.<table>` on the reference branch.
-- For model outputs, derive the type from the transformation and the upstream schemas.
-- If a type cannot be determined from the catalog or the code, ask the user. Never invent a type.
-
-Map catalog types to the field types listed in [examples.md](examples.md#5-declaring-tableschema-classes). There is no unsigned or 32-bit float field type; use `Float64` for floats and cast unsigned integers in the model body. Read the `REQUIRED` column too: a bare field type declares a required column, so every source column that is not required migrates to `Type | None`.
-
-Nested types (list, struct, map) and decimals have no field type at all. Annotate those fields as `bauplan.Any`, the SDK's passthrough type rather than `typing.Any`: the column keeps its real type at runtime, the contract just does not pin it. This applies to output schemas and to `projection_schema` classes migrated from an old `columns=[...]` list, so a nested or decimal column is never a reason to drop a projection or a return annotation. Flag every `Any` field in the report.
-
-### Step 4: Upgrade Python and the SDK dependency
+### Step 3: Upgrade Python and the SDK dependency
 
 The typed SDK requires Python >= 3.11 and the schema classes use `X | None` union syntax, so raising the interpreter is mandatory, not a preference: on an older interpreter the install will not resolve. Bump `requires-python` in `pyproject.toml` to `>=3.11` (and `uv python pin 3.11` if the project uses uv) before touching the SDK version.
 
-Then check whether the project uses `uv` (`pyproject.toml` / `uv.lock`) or plain pip, and upgrade `bauplan` to the newest release. Do not trust the version number alone: verify the installed package actually ships the typed SDK by probing it:
+Then check whether the project uses `uv` (`pyproject.toml` / `uv.lock`) or plain pip, and upgrade `bauplan` to the newest release. Do not trust the version number alone: verify the installed package actually ships the typed SDK by probing it. If the project uses `uv`:
 
 ```bash
 uv run python -c "import bauplan; bauplan.TableSchema"
 ```
 
-If this raises, the installed release predates the typed SDK (early 0.3.0 pre-releases do). Stop and ask the user which build to install; do not proceed with a package that lacks the symbols.
+If this raises, the installed release predates the typed SDK. Stop and ask the user which build to install; do not proceed with a package that lacks the symbols.
 
 From now on run the CLI through the project environment (`uv run bauplan ...`) so the upgraded version is the one executing.
+
+### Step 4: Discover column types
+
+The old `columns=[...]` lists carry names only; `TableSchema` classes need types.
+
+- For source tables identified in step 1, read the catalog with the upgraded CLI: `uv run bauplan table get <namespace>.<table>`.
+  - If there is existing table or column documentation in the `DOC` column that gets truncated, request table metadata again with json output: `uv run bauplan table get <namespace>.<table> -O json`.
+- For model outputs, derive the type from the transformation and the upstream schemas.
+- If a type cannot be determined from the catalog or the code, ask the user. Never invent a type.
+
+Map catalog types to the field types listed in [examples.md](examples.md#5-declaring-tableschema-classes). There is no unsigned or 32-bit float field type; use `Float64` for floats and cast unsigned integers in the model body. If the catalog type is nullable, then the field type should be marked optional: `Type | None`. A bare `Type` declares a column that is "non-nullable" or "required".
+
+Nested types (list, struct, map) and decimals have no field type at all. Annotate those fields as `bauplan.Any`, the SDK's passthrough type rather than `typing.Any`: the column keeps its real type at runtime, the contract just does not pin it. This applies to output schemas and to `projection_schema` classes migrated from an old `columns=[...]` list, so a nested or decimal column is never a reason to drop a projection or a return annotation. Flag every `Any` field in the report.
+
+`table get` also surfaces any documentation the source tables already have: the table comment above the schema, column docs in the `DOC` column, or `properties.comment` and `fields[].doc` in the JSON output. A pipeline on the old SDK had no way to persist either, but they may have been written outside of Bauplan; capture any existing documentation for item 8 of step 5.
 
 ### Step 5: Rewrite
 
 Apply the patterns from [examples.md](examples.md) to each file, in this order:
 
 1. imports (pattern 1)
-2. one `TableSchema` class per input projection and one per model output, with `| None` on every column the catalog does not mark required (patterns 3, 4, 5)
+2. one `TableSchema` class per input projection and one per model output, with `| None` on every column the catalog marks nullable (patterns 3, 4, 5)
 3. inputs from default arguments to `Annotated` (pattern 2)
 4. return annotations on every model, `-> bool` on every expectation (patterns 4, 6)
 5. parameters to `Annotated` (pattern 7)
 6. return values converted to `pa.Table`, dtype casts where the schema pins a type (patterns 8, 9)
 7. SQL models get the `output_schema` directive (pattern 10)
+8. ask the user whether documentation should be added; if so, add it to schema classes and schema fields as needed (pattern 12). Follow the **`bauplan-data-semantics`** skill for details.
 
-Respect the "do not over-migrate" list in [examples.md](examples.md#12-do-not-over-migrate): decorators, project yml, filters, and DAG semantics are untouched.
+Respect the "do not over-migrate" list in [examples.md](examples.md#13-do-not-over-migrate): decorators, project yml, filters, and DAG semantics are untouched.
 
 While rewriting, flag (do not delete) expectations that only assert a column's dtype: the declared schema now covers them, so propose replacing each with a value-level check.
 
@@ -122,7 +126,7 @@ Validation ladder, from cheapest to most complete:
 
 Known error signatures and their causes:
 
-- `A model cannot have input arguments without a default value: "<name>" found`, usually together with `A model must have at least one input model` (same pair for expectations), on lines you migrated: the environment does NOT understand the typed syntax yet, on the client side or on the backend side. The migrated code is fine. Do NOT "fix" it by reverting to default-argument inputs; re-check the SDK probe from step 4, then report to the user that their environment predates typed-SDK support and stop at static validation.
+- `A model cannot have input arguments without a default value: "<name>" found`, usually together with `A model must have at least one input model` (same pair for expectations), on lines you migrated: the environment does NOT understand the typed syntax yet, on the client side or on the backend side. The migrated code is fine. Do NOT "fix" it by reverting to default-argument inputs; re-check the SDK probe from step 3, then report to the user that their environment predates typed-SDK support and stop at static validation.
 - `returns unknown schema "<Name>"`: the return annotation names a class that does not exist, is misspelled, or does not inherit directly from `TableSchema`.
 - `Model must have a valid return type annotation`, or `Model return type annotation must be of the form: Annotated[pyarrow.Table, SchemaType]`: a model was left without a return annotation, or with a bare `-> pa.Table`. Every model needs a schema contract, so give it one instead of removing the annotation.
 - `Unexpected TableField parameter: <name>`: `TableField` takes only `doc` and `lineage`. `title` and `nullable` are gone; nullability is `| None` on the type.
@@ -135,17 +139,17 @@ Iterate on errors until dry run and full run both pass. Then clean up: delete th
 
 ### Step 7: Report
 
-Summarize for the user: files rewritten, schema classes created (and which table or model each describes), parameters retyped, casts added, columns migrated to `| None`, lineage dropped because it pointed at the catalog, fields left as `Any` because nested types and decimals have no field type, expectations flagged as redundant, and any blockers left unmigrated with the reason.
+Summarize for the user: files rewritten, schema classes created (and which table or model each describes), parameters retyped, casts added, columns migrated to `| None`, lineage dropped because it pointed at the catalog, fields left as `Any` because nested types and decimals have no field type, expectations flagged as redundant, documentation added or deliberately omitted, and any blockers left unmigrated with the reason.
 
 ## Workflow Checklist
 
 - [ ] Step 1: Inventory all models, expectations, inputs, parameters, returns
-- [ ] Step 2: Report blockers (`connector`/`ref` kwargs, non-literal filters)
-- [ ] Step 3: Read source table schemas → `bauplan table get <namespace>.<table>`
-- [ ] Step 4: Upgrade Python to >= 3.11 (**mandatory**), then the project dependency to the typed SDK (0.3.x)
-- [ ] Step 5: Rewrite files following [examples.md](examples.md)
-- [ ] Step 6: Create validation branch → `uvx ty check` → dry run → full run → iterate until green
-- [ ] Step 7: Report changes, flagged expectations, and leftovers to the user
+- [ ] Step 2: Report blockers (`connector`/`ref` kwargs, non-literal filters, `internet_access`)
+- [ ] Step 3: Upgrade Python to >= 3.11 (**mandatory**), then the project dependency to the typed SDK (~=0.3.2)
+- [ ] Step 4: Read source table schemas and docs → `uv run bauplan table get <namespace>.<table> -O json`
+- [ ] Step 5: Rewrite files following [examples.md](examples.md), then ask the user whether to add documentation
+- [ ] Step 6: Create validation branch → `uvx ruff check` → `uvx ty check` → dry run → full run → iterate until green
+- [ ] Step 7: Report changes, flagged expectations, documentation added or omitted, and leftovers to the user
 
 ## Reference
 
@@ -156,7 +160,10 @@ When unsure about a signature or concept, fetch the doc page via `WebFetch` rath
 **Relevant concept pages:**
 - Semantic annotations: `https://docs.bauplanlabs.com/concepts/semantic-annotations.md`
 - Models: `https://docs.bauplanlabs.com/concepts/models.md`
+- Tables: `https://docs.bauplanlabs.com/concepts/tables.md`
 - Expectations: `https://docs.bauplanlabs.com/concepts/expectations.md`
 - Parameters: `https://docs.bauplanlabs.com/common-scenarios/parameterized-runs.md`
+
+**Full doc index:** `https://docs.bauplanlabs.com/llms.txt`
 
 **CLI:** self-documenting via `bauplan --help` and `bauplan <command> --help`.

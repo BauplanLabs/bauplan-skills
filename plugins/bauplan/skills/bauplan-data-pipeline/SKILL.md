@@ -40,6 +40,7 @@ Before writing a pipeline, you MUST gather the following from the user:
 3. **Output tables** (required): Which tables should be materialized as final outputs?
 4. **Materialization strategy** (optional, default: `REPLACE`): Should output tables use `REPLACE` or `APPEND`?
 5. **Strict mode** (optional, default: on): Should failing expectations be allowed to pass, which needs `--no-strict`?
+6. **Documentation** (optional, default: ask): Should table and column documentation be added to the schema classes? Follow the **`bauplan-data-semantics`** skill for details.
 
 **If any required item is missing, ask the user before writing any code.**
 
@@ -151,7 +152,7 @@ Return an actual `pa.Table`.
 
 Nullability is part of the type, not a parameter: a bare `bauplan.Int64` declares a **required** column, `bauplan.Int64 | None` an optional one. In an `Annotated` field the union goes on the data type, as `Annotated[bauplan.Int64 | None, bauplan.TableField(doc=...)]`; wrapping the whole annotation is rejected.
 
-The two positions are decided differently. A projection schema must mirror the source: an optional source column cannot satisfy a required field, so read the `REQUIRED` column of `bauplan table get` and use `| None` for every column it does not mark required, which is most of them in practice. An output schema is your declaration about the data the model produces: it is checked by counting actual nulls in the returned table, not by reading Arrow's nullability flag, and it becomes the written column's nullability in the catalog. `| None` is the safe default there too; declare an output column required only when the transformation guarantees no nulls, such as a count or other aggregate, a `fill_null`, or a column the filter cannot leave null.
+The two positions are decided differently. A projection schema must mirror the source: an optional source column cannot satisfy a required field, so read the `NULLABLE` column of `bauplan table get` and use `| None` for every column it marks nullable. An output schema is your declaration about the data the model produces: it is checked by counting actual nulls in the returned table, not by reading Arrow's nullability flag, and it becomes the written column's nullability in the catalog. `| None` is the safe default there too; declare an output column required only when the transformation guarantees no nulls, such as a count or other aggregate, a `fill_null`, or a column the filter cannot leave null.
 
 Cast unsigned aggregation counts to signed integers and align float widths and timestamp units with the declared contract. Decimal columns and nested list, struct, and map fields have no supported schema type: annotate them as `bauplan.Any`, the SDK's own passthrough type and not `typing.Any` (the column still carries its real Arrow type at runtime, it is just not pinned by the contract), and report the limitation.
 
@@ -160,7 +161,7 @@ Run parameters use plain Python types in annotations, for example `rate: Annotat
 #### Docstrings with Output Schema
 Every Python model should have a docstring describing the transformation and showing the output table structure as an ASCII table. If the table is too wide, show only key columns; if values are too large, truncate them.
 
-This docstring is published metadata, not just a comment: it is written to Iceberg as the table's `comment`, and each field's `TableField(doc=...)` is written as that column's doc. Neither is surfaced by `bauplan table get` in 0.3.0, which prints only `NAME`, `REQUIRED` and `TYPE`: do not expect a `DOC` column there. When a model has no docstring the output schema's docstring is used instead. Both are passed through `inspect.cleandoc`, so indentation is normalized and a whitespace-only doc means no documentation at all. Write them as documentation the reader of the catalog will see.
+This docstring is published metadata, not just a comment: it is written to Iceberg as the table's `comment`, and each field's `TableField(doc=...)` is written as that column's doc. Starting with 0.3.2, `bauplan table get` surfaces table and column documentation (`properties.comment` and `doc`, respectively). Table documentation is displayed first, then the table schema is displayed with an extra column, `DOC`. When a model has no docstring the output schema's docstring is used instead. Both are passed through `inspect.cleandoc`, so indentation is normalized and a whitespace-only doc means no documentation at all. Write them as documentation the reader of the catalog will see. See the **`bauplan-data-semantics`** skill for more guidelines and details for documentation to support a semantic layer.
 
 #### I/O Pushdown with `projection_schema` and `filter`
 Use `projection_schema` and `filter` in `bauplan.Model()` to restrict the data read at the storage level. Declare only needed columns and their types in a projection `TableSchema`. The supported `Model` arguments are `name`, `projection_schema`, and `filter`.
@@ -249,12 +250,13 @@ After writing models, verify each model has the correct `materialization_strateg
 - [ ] Step 5: Verify source tables → `bauplan table get <namespace>.<table_name>`
 - [ ] Step 6: Create project folder with `bauplan_project.yml`
 - [ ] Step 7: Write Python models respecting the best practices above
-- [ ] Step 8: Verify materialization (see Materialization Checklist)
-- [ ] Step 9: Type check → `uvx ty check`, fix everything it reports
-- [ ] Step 10: Dry run → `bauplan run --dry-run`
-- [ ] Step 11: Full run → `bauplan run`
-- [ ] Step 12: Verify output → `bauplan table get` + `bauplan query`
-- [ ] Step 13: Offer to add data quality checks → invoke the `bauplan-data-quality-checks` skill with the project path. The skill reads `models.py`, derives checks from how the pipeline uses each table, and generates `expectations.py`.
+- [ ] Step 8: Add documentation, if requested → invoke the `bauplan-data-semantics` skill with the project path. The skill reads `models.py` and the source tables' existing documentation, then drafts the docstrings and `TableField(doc=)` text to apply.
+- [ ] Step 9: Verify materialization (see Materialization Checklist)
+- [ ] Step 10: Type check → `uvx ty check`, fix everything it reports
+- [ ] Step 11: Dry run → `bauplan run --dry-run`
+- [ ] Step 12: Full run → `bauplan run`
+- [ ] Step 13: Verify output → `bauplan table get` + `bauplan query`
+- [ ] Step 14: Offer to add data quality checks → invoke the `bauplan-data-quality-checks` skill with the project path. The skill reads `models.py`, derives checks from how the pipeline uses each table, and generates `expectations.py`.
 
 ## SQL Models (Optional)
 
@@ -303,6 +305,7 @@ See [examples.md](examples.md) for:
 When unsure about a method signature, CLI flag, or concept, fetch the relevant doc page via `WebFetch` rather than guessing. Pages are markdown and LLM-friendly.
 
 **Python SDK:** `https://docs.bauplanlabs.com/reference/bauplan.md`
+**SDK types:** `https://docs.bauplanlabs.com/reference/bauplan-sdk-types.md`
 **Standard expectations:** `https://docs.bauplanlabs.com/reference/bauplan-standard-expectations.md`
 
 **Relevant concept pages:**
@@ -312,7 +315,7 @@ When unsure about a method signature, CLI flag, or concept, fetch the relevant d
 - Projects: `https://docs.bauplanlabs.com/concepts/projects.md`
 - Expectations: `https://docs.bauplanlabs.com/concepts/expectations.md`
 - Execution model: `https://docs.bauplanlabs.com/overview/execution-model.md`
-- Parameters: `https://docs.bauplanlabs.com/concepts/pipelines.md`
+- Parameters: `https://docs.bauplanlabs.com/common-scenarios/parameterized-runs.md`
 
 **Full doc index:** `https://docs.bauplanlabs.com/llms.txt`
 
