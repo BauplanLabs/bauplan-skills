@@ -12,9 +12,7 @@ allowed-tools:
 
 # Data Semantics
 
-A column's name and type tell you how to parse a value, not what it means. `trip_time` is a `long`, but seconds versus minutes moves every downstream number by 60x. `base_passenger_fare` is a `double`, but whether it includes tolls decides whether a revenue report is right or quietly 5% low.
-
-Bauplan carries that meaning in the table itself: a table-level `comment` and a per-column `doc`, both stored in Iceberg, both versioned per data branch. That is the semantic layer. This skill reads it and drafts what it should say when it is missing.
+Bauplan can hold contextual meaning for data in table metadata: a table-level `comment` and a per-column `doc`, both stored in Iceberg, both versioned per data branch. The contextual meaning, stored as table and column documentation, provides support for the semantic layer. This skill reads table and column documentation and drafts what it should say when it is missing.
 
 Documentation cannot be written through the CLI or SDK — it is authored in pipeline code and materialized by a run — so applying a draft always belongs to a write-capable skill.
 
@@ -99,7 +97,7 @@ Three consequences for a draft:
 
 ## What Deserves a Doc
 
-**Document a column when a competent reader could use it correctly by name and type alone, and still be wrong.** A doc that restates the name spends the reader's attention and returns nothing — and trains them to skip the docs that matter.
+**Always document a column when its name and type does not disambiguate its usage.** However, some documentation is always useful; even if a column seems obvious by name and type, documenting that usage is useful to prevent, or manage, semantic and usage drift in the future.
 
 | Trigger | What the doc must settle | Example |
 |---|---|---|
@@ -213,8 +211,11 @@ Had that doc been missing, this is the draft that closes the gap — note that `
 
 ```python
 class NormalizedTripsSchema(bauplan.TableSchema):
-    """One row per completed trip. Fares are decomposed into components;
-    no column holds total revenue — sum the components."""
+    """
+    One row per completed trip.
+
+    Fares are decomposed into components; no column holds total revenue — sum the components.
+    """
 
     base_passenger_fare: Annotated[
         bauplan.Float64 | None,
@@ -228,7 +229,7 @@ class NormalizedTripsSchema(bauplan.TableSchema):
     ]
 ```
 
-The table comment carries the load-bearing fact — *no column holds total revenue* — because it is a statement about how the columns relate, not about any one of them.
+The table comment carries important cross-column meaning— *no column holds total revenue*— that describes how multiple columns relate, rather than describing a specific column.
 
 ### The documentation fixes the usage
 
