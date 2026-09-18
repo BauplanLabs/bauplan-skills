@@ -118,6 +118,6 @@ plugins/bauplan/
 
 ## Metadata
 
-- **Version:** 2.0.0
+- **Version:** 2.1.0
 - **Author:** [Bauplan Labs](https://www.bauplanlabs.com/)
 - **License:** MIT
