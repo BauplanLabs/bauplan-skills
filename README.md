@@ -32,12 +32,12 @@ To update to the latest version, run:
 claude plugin update bauplan@bauplan-skills
 ```
 
-### Use the CLAUDE.md
+### Use the AGENTS.md
 
-Copy `CLAUDE.md` from this repo into the root of your project, or merge its contents into your existing `CLAUDE.md`:
+Copy `AGENTS.md` from this repo into the root of your project, or merge its contents into your existing `AGENTS.md`:
 
 ```sh
-curl -o CLAUDE.md https://raw.githubusercontent.com/BauplanLabs/bauplan-skills/main/CLAUDE.md
+curl -o AGENTS.md https://raw.githubusercontent.com/BauplanLabs/bauplan-skills/main/AGENTS.md
 ```
 
 This gives Claude Code the baseline context it needs (safety rules, CLI vs SDK guidance, authentication setup, and pointers to the skills) even before any skill is triggered.
@@ -64,7 +64,7 @@ codex plugin marketplace upgrade bauplan-skills
 Codex uses `AGENTS.md` as its project context file. Copy it into the root of your project:
 
 ```sh
-curl -o AGENTS.md https://raw.githubusercontent.com/BauplanLabs/bauplan-skills/main/CLAUDE.md
+curl -o AGENTS.md https://raw.githubusercontent.com/BauplanLabs/bauplan-skills/main/AGENTS.md
 ```
 
 ## Cursor
@@ -80,7 +80,7 @@ To update to the latest version, click **Refresh**.
 Cursor supports [granular rules](https://cursor.com/docs/rules), but `AGENTS.md` works too. Copy it into the root of your project:
 
 ```sh
-curl -o AGENTS.md https://raw.githubusercontent.com/BauplanLabs/bauplan-skills/main/CLAUDE.md
+curl -o AGENTS.md https://raw.githubusercontent.com/BauplanLabs/bauplan-skills/main/AGENTS.md
 ```
 
 ## Skills
