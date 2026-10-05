@@ -65,6 +65,12 @@ Migrate an existing codebase using Bauplan < 0.3.0 to the Bauplan SDK 0.3.0+ whi
 
 **When to use:** Migrating older codebases to the typed SDK.
 
+### bauplan-dag-optimization
+
+Optimizes an existing DAG without changing its outputs. Inventories the models and profiles the data, then decides what is materialized, narrows inputs with projections and catalog filters, restructures models and project boundaries, and proposes a partitioning plan (read pruning, incremental writes) backed by the measured data.
+
+**When to use:** A working pipeline is slow, writes too many intermediate tables, or needs a partitioning strategy.
+
 ## How It Works
 
 Each skill is a structured workflow that Claude follows autonomously. Skills use the Bauplan Python SDK and CLI for all data operations. Key principles:
@@ -87,6 +93,7 @@ Each skill is a structured workflow that Claude follows autonomously. Skills use
 | bauplan-debug-and-fix-pipeline | `skills/bauplan-debug-and-fix-pipeline/` |
 | bauplan-data-quality-checks | `skills/bauplan-data-quality-checks/` |
 | bauplan-migrate-to-typed-sdk | `skills/bauplan-migrate-to-typed-sdk/` |
+| bauplan-dag-optimization | `skills/bauplan-dag-optimization/` |
 
 ### Files
 
@@ -113,11 +120,15 @@ plugins/bauplan/
     bauplan-migrate-to-typed-sdk/
       SKILL.md               # Migration skill
       examples.md            # Comprehensive set of examples
+    bauplan-dag-optimization/
+      SKILL.md               # DAG optimization skill
+      partitioning.md        # Profiling queries and partitioning heuristics
+      patterns.md            # Before/after optimization patterns
   README.md
 ```
 
 ## Metadata
 
-- **Version:** 2.1.0
+- **Version:** 2.2.0
 - **Author:** [Bauplan Labs](https://www.bauplanlabs.com/)
 - **License:** MIT

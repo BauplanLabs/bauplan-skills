@@ -35,14 +35,14 @@ wheels = [
 
 [[package]]
 name = "bauplan-skills"
-version = "2.1.0"
+version = "2.2.0"
 source = { virtual = "." }
 dependencies = [
     { name = "bauplan" },
 ]
 
 [package.metadata]
-requires-dist = [{ name = "bauplan", specifier = ">=0.1.16" }]
+requires-dist = [{ name = "bauplan", specifier = ">=0.3.3" }]
 
 [[package]]
 name = "pyarrow"

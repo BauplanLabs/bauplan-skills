@@ -121,8 +121,8 @@ Work on an isolated branch: `bauplan checkout -b <username>.<branch> --from-ref 
 Validation ladder, from cheapest to most complete:
 
 1. **Static checks**: `uvx ruff check` and `uvx ty check` on the project. This is the payoff of the migration: the typed SDK ships stubs, so a wrong kwarg, a misspelled field type, or a schema class that does not resolve fails here in seconds, locally, before any job reaches the platform. Never skip it.
-2. **Dry run**: `bauplan run --dry-run`. Schema contracts are enforced on every run, there is no flag to opt in, and strict mode is the default so a failing expectation halts the run.
-3. **Full run** on the isolated branch: `bauplan run`. Runtime dtype mismatches (unsigned counts, float widths) and extra output columns only surface here, as `ModelOutputContractError`.
+2. **Dry run**: `bauplan run --dry-run`. Schema contracts are enforced on every run, there is no flag to opt in, and strict mode is the default so a failing expectation halts the run. The dry run executes every model, so runtime dtype mismatches (unsigned counts, float widths) and extra output columns already surface here, as `ModelOutputContractError`.
+3. **Full run** on the isolated branch: `bauplan run`, which also materializes the outputs.
 
 Known error signatures and their causes:
 

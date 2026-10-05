@@ -1,7 +1,7 @@
 {
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
   "name": "bauplan-skills",
-  "description": "Bauplan data lakehouse skills for Claude Code - explore data, build pipelines, ingest safely, debug failures, assess data, and enforce quality checks",
+  "description": "Bauplan data lakehouse skills for Claude Code - explore data, build pipelines, ingest safely, debug failures, assess data, enforce quality checks, and optimize DAGs",
   "owner": {
     "name": "Bauplan Labs",
     "email": "info@bauplanlabs.com"
@@ -9,7 +9,7 @@
   "plugins": [
     {
       "name": "bauplan",
-      "description": "Skills for working with Bauplan data lakehouses: explore data, build pipelines, ingest from S3, debug failures, assess data feasibility, and generate quality checks",
+      "description": "Skills for working with Bauplan data lakehouses: explore data, build pipelines, ingest from S3, debug failures, assess data feasibility, generate quality checks, and optimize DAGs",
       "author": {
         "name": "Bauplan Labs",
         "email": "info@bauplanlabs.com"
