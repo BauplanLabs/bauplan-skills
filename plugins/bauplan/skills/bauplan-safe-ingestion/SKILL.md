@@ -139,11 +139,7 @@ def validate_import(client, table_name, branch, namespace="bauplan"):
 
 def main():
     client = bauplan.Client()
-    info = client.info()
-    if info.user is None:
-        raise RuntimeError("no user in client info; check the bauplan credentials")
-
-    username = info.user.username
+    username = client.info().user.username
     timestamp = int(time.time())
     branch_name = f"{username}.import_{TABLE_NAME}_{timestamp}"
 
@@ -204,7 +200,7 @@ if __name__ == "__main__":
 | Method                                         | Description                                           |
 |------------------------------------------------|-------------------------------------------------------|
 | `bauplan.Client()`                             | Initialize the bauplan client                         |
-| `client.info()`                                | Get client info; `.user` is optional, guard it before reading `.user.username` |
+| `client.info()`                                | Get client info; read the username from `.user.username` |
 | `client.create_branch(name, from_ref="main")`  | Create a new branch from specified ref                |
 | `client.has_branch(name)`                      | Check if branch exists                                |
 | `client.delete_branch(name)`                   | Delete a branch                                       |
