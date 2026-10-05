@@ -94,6 +94,7 @@ curl -o AGENTS.md https://raw.githubusercontent.com/BauplanLabs/bauplan-skills/m
 | `bauplan-debug-and-fix-pipeline` | Diagnose and fix failed pipeline jobs |
 | `bauplan-data-quality-checks` | Generate data quality check code for pipelines and ingestion |
 | `bauplan-migrate-to-typed-sdk` | Migrate existing codebases to the typed SDK (0.3.0+) |
+| `bauplan-dag-optimization` | Optimize an existing DAG: materialization, projections and filters, model and project structure, data-driven partitioning |
 
 ## License
 

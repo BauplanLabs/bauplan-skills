@@ -127,6 +127,8 @@ See [examples.md](examples.md#python-model-with-multiple-inputs) for complete ex
 
 ### Best Practices
 
+Consult the skill `bauplan-dag-optimization` for thorough instructions on DAG optimization.
+
 #### Output Columns Validation
 Declare model outputs with `-> Annotated[pa.Table, OutputSchema]`, where `OutputSchema` inherits directly from `bauplan.TableSchema`. The return annotation is mandatory and must take this exact form: a bare `-> pa.Table` and a missing annotation are both rejected at parse time. The contract is exhaustive and enforced on every run with no flag to opt in: the returned table must carry exactly the declared columns, so an extra column fails the run with `ModelOutputContractError` just as a missing one does. The `columns` keyword is no longer accepted by `@bauplan.model()`, it only worked for SDK versions < 0.3.0. Inspect source column types with `bauplan table get <namespace>.<table>` and derive output types from the transformation; ask when a type cannot be determined. Give schema classes descriptive docstrings and names unique across project files. Use `Annotated[FieldType, bauplan.TableField(doc=...)]` when a column needs documentation, and `lineage=` when it should point at a field of another schema class in the same file. Those two are the only `TableField` parameters: anything else fails at parse time with `Unexpected TableField parameter: <name>`.
 
