@@ -39,8 +39,7 @@ Before writing a pipeline, you MUST gather the following from the user:
 2. **Source tables** (required): Which tables from the lakehouse should be used as inputs? Verify they exist with `bauplan table get <namespace>.<table_name>`.
 3. **Output tables** (required): Which tables should be materialized as final outputs?
 4. **Materialization strategy** (optional, default: `REPLACE`): Should output tables use `REPLACE` or `APPEND`?
-5. **Strict mode** (optional, default: on): Should failing expectations be allowed to pass, which needs `--no-strict`?
-6. **Documentation** (optional, default: ask): Should table and column documentation be added to the schema classes? Follow the **`bauplan-data-semantics`** skill for details.
+5. **Documentation** (optional, default: ask): Should table and column documentation be added to the schema classes? Follow the **`bauplan-data-semantics`** skill for details.
 
 **If any required item is missing, ask the user before writing any code.**
 
@@ -229,13 +228,7 @@ bauplan query "SELECT * FROM <namespace>.<output_table> LIMIT 5"
 ```
 
 ### Strict Mode
-Strict mode is on by default: the run fails immediately on failing expectations. Pass `--no-strict` when you want those reported without failing the run, for example while iterating on a check you expect to fail:
-```bash
-bauplan run --dry-run --no-strict
-bauplan run --no-strict
-```
-
-`--no-strict` is a bare flag, it takes no value, and there is no `--strict` flag to pass. In the Python SDK the equivalent is `client.run(..., strict=False)`; `strict`, `cache`, and `transaction` are booleans that all default to `True`.
+Strict mode is on by default: a failing expectation fails the run. There is no `--strict` flag to pass. `--no-strict` is a bare flag that disables enforcement for the whole run; the SDK equivalent is `client.run(..., strict=False)`, and `strict`, `cache`, and `transaction` all default to `True`.
 
 ## Materialization Checklist
 After writing models, verify each model has the correct `materialization_strategy`:

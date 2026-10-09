@@ -379,9 +379,7 @@ def test_no_null_ids(
     data: Annotated[pa.Table, bauplan.Model('clean_orders')],
 ) -> bool:
     """Order identifiers must be present."""
-    result = expect_column_no_nulls(data, 'order_id')
-    assert result, 'order_id must not contain null values'
-    return result
+    return expect_column_no_nulls(data, 'order_id')
 
 @bauplan.expectation()
 @bauplan.python('3.11')
@@ -389,9 +387,7 @@ def test_unique_order_ids(
     data: Annotated[pa.Table, bauplan.Model('clean_orders')],
 ) -> bool:
     """Order identifiers must be unique."""
-    result = expect_column_all_unique(data, 'order_id')
-    assert result, 'order_id must be unique'
-    return result
+    return expect_column_all_unique(data, 'order_id')
 
 @bauplan.expectation()
 @bauplan.python('3.11')
@@ -400,9 +396,7 @@ def test_reasonable_trip_distance(
 ) -> bool:
     """Mean trip distance must remain below the expected bound."""
     # Average trip should be < 50 miles
-    upper_bound = expect_column_mean_smaller_than(data, 'trip_miles', 50.0)
-    assert upper_bound, 'Average trip distance out of expected range'
-    return upper_bound
+    return expect_column_mean_smaller_than(data, 'trip_miles', 50.0)
 ```
 
 ## Multi-Stage Pipeline Example
@@ -638,7 +632,7 @@ def daily_summary(
 
 ### expectations.py
 
-Expectations validate data quality after the pipeline runs. They must return `True` (pass) or raise an exception (fail).
+Expectations validate data quality after the pipeline runs. They return `True` (pass) or `False` (fail); strict mode is on by default, so a `False` fails the job.
 ```python
 from typing import Annotated
 
@@ -653,10 +647,10 @@ def test_staging_completeness(
     data: Annotated[pa.Table, bauplan.Model('staging')],
 ) -> bool:
     """Verify critical columns have no null values."""
-    for col in ['event_id', 'user_session', 'event_time']:
-        result = expect_column_no_nulls(data, col)
-        assert result, f'{col} contains null values'
-    return True
+    return all(
+        expect_column_no_nulls(data, col)
+        for col in ['event_id', 'user_session', 'event_time']
+    )
 ```
 
 ### Running the Pipeline

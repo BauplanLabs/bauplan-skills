@@ -52,7 +52,7 @@ Ensure the environment has a typed SDK build (0.3.0+). Typed declarations are on
 
 This section is the foundation. It applies to both pipeline expectations and ingestion validation — the thinking is identical, only the code form differs.
 
-When the user provides explicit specifications, much of this thinking is already done. Translate their specs to code, using the methodology below to fill in gaps (e.g., if they specify a check but not its severity).
+When the user provides explicit specifications, much of this thinking is already done. Translate their specs to code, using the methodology below to fill in gaps (e.g., a check the user phrased as a warning: either give it a threshold worth stopping the run on, or leave it out).
 
 When deriving checks from pipeline code, this methodology is the primary tool.
 
@@ -74,17 +74,17 @@ The anti-pattern: running null counts, uniqueness checks, and range queries on e
 
 Every check encodes a hypothesis. Before writing any expectation or validation query, state it:
 
-> "I expect **[column]** to be **[property]** because **[consumer/reason]**, and if it fails it should **[halt/warn]** because **[impact]**."
+> "I expect **[column]** to be **[property]** because **[consumer/reason]**, and if it fails the run must stop (or the merge must be blocked) because **[impact]**."
 
 Examples:
 
-- "I expect `order_id` to have no nulls because the billing pipeline joins on it, and if it fails it should halt because every downstream table breaks."
-- "I expect `event_time` to be within the last 24 hours because the dashboard shows daily metrics, and if it fails it should warn because stale data is misleading but not corrupting."
-- "I expect `price` to be positive because the revenue model sums it, and if it fails it should halt because negative prices produce wrong totals."
+- "I expect `order_id` to have no nulls because the billing pipeline joins on it, and if it fails the run must stop because every downstream table breaks."
+- "I expect `event_time` to be within the last 24 hours because the dashboard shows daily metrics, and if it fails the run must stop because publishing a stale table misleads everyone who reads it."
+- "I expect `price` to be positive because the revenue model sums it, and if it fails the run must stop because negative prices produce wrong totals."
 
 **If you cannot fill in this template for a check, you do not have enough context to write it.** Ask the user, inspect the schema, or read the downstream models.
 
-When the user provides specifications directly, the "because" clause may be implicit. That's fine — they've done the reasoning. But if they haven't specified severity (FAIL vs WARN), use the template to figure it out.
+When the user provides specifications directly, the "because" clause may be implicit. That's fine — they've done the reasoning. But if a spec is phrased as a warning, decide whether it is worth stopping the run on.
 
 ### Deriving Checks from Pipeline Code
 
@@ -165,23 +165,15 @@ Six dimensions, each producing a specific kind of assertion:
 
 Not every table needs all six dimensions. Pick the ones that matter for this table's consumers.
 
-### Classify Every Check by Severity
+### Every Check Fails the Run
 
-Every check must have a severity before you write the code. This determines whether it halts execution or logs a warning.
+Strict mode is on by default: a `False` fails the job and nothing is materialized. Before writing a check, decide whether a failure is worth stopping the run.
 
-**FAIL** (halt the pipeline / block the merge):
-Downstream use is unsafe. Examples: missing primary key, zero rows, wrong schema, broken join column, negative values in a revenue column that gets summed.
+**Worth stopping on**: downstream use is unsafe. Examples: missing primary key, zero rows, wrong schema, broken join column, negative values in a revenue column that gets summed. Write it as an expectation.
 
-In pipeline expectations: use `assert`.
-In ingestion validation: raise an exception to prevent `merge_branch()`.
+**Not worth stopping on**: quality is degraded but the output is still safe to publish. Examples: a slightly higher null rate in a non-critical column, data 2 hours stale against a 24-hour SLA. Tighten the threshold until a breach is worth stopping on, or leave the check out.
 
-**WARN** (log and continue):
-Quality is degraded but not catastrophic. Examples: higher-than-usual null rate in a non-critical column, data is 2 hours stale against a 24-hour SLA, unexpected but non-breaking extra columns.
-
-In pipeline expectations: print the result, do not assert.
-In ingestion validation: log the warning, let the user decide whether to merge.
-
-**If you cannot classify a check, you do not understand its impact yet.** Go back to the consumer analysis.
+**If you cannot decide, you do not understand the impact yet.** Go back to the consumer analysis.
 
 ### Pin Checks to a Data State
 
@@ -230,9 +222,7 @@ def test_no_null_order_ids(
 ) -> bool:
     """order_id must not be null because billing joins on it."""
     from bauplan.standard_expectations import expect_column_no_nulls
-    result = expect_column_no_nulls(data, 'order_id')
-    assert result, 'order_id contains null values'
-    return result
+    return expect_column_no_nulls(data, 'order_id')
 ```
 
 Key mechanics:
@@ -240,9 +230,7 @@ Key mechanics:
 - `Model` accepts only `name`, `projection_schema`, and literal `filter`; `$param` templating is supported. Run parameters use `Annotated[<Python type>, bauplan.Parameter("name")]`, matching the YAML parameter type.
 - Expectations run as DAG nodes during `bauplan run`, after the model they depend on completes.
 - They receive the model's output as an Arrow table — same as a downstream model would.
-- `True` = pass, `False` = fail.
-- `assert` makes the failure halt the pipeline, whatever the run options are.
-- Strict mode is on by default, so returning `False` without an `assert` also fails the run. `bauplan run --no-strict` is what turns those into logged failures that let the run finish.
+- `True` = pass, `False` = fail. Strict mode is on by default, so a `False` fails the run; `--no-strict` (`strict=False` in the SDK) disables it for the whole run, not per check.
 
 ### Using bauplan.standard_expectations
 
@@ -282,11 +270,9 @@ def test_valid_event_types(
 ) -> bool:
     """event_type must be known because downstream filters depend on it."""
     from bauplan.standard_expectations import expect_column_accepted_values
-    result = expect_column_accepted_values(
+    return expect_column_accepted_values(
         data, 'event_type', ['view', 'cart', 'purchase', 'remove']
     )
-    assert result, 'event_type contains unexpected values'
-    return result
 ```
 
 ### Writing Custom Expectations
@@ -315,9 +301,7 @@ def test_data_freshness(
     df = pl.DataFrame(data)
     max_date = df.select(pl.col('date').max()).item()
     threshold = datetime.now() - timedelta(days=2)
-    is_fresh = max_date >= threshold
-    assert is_fresh, f'Data is stale: most recent date is {max_date}'
-    return is_fresh
+    return max_date >= threshold
 ```
 
 **Volume check:**
@@ -329,9 +313,7 @@ def test_minimum_row_count(
 ) -> bool:
     """Table must have at least 1000 rows to meet the expected source volume."""
     row_count = data.num_rows
-    is_sufficient = row_count >= 1000
-    assert is_sufficient, f'Only {row_count} rows — expected at least 1000'
-    return is_sufficient
+    return row_count >= 1000
 ```
 
 **Cross-column consistency:**
@@ -355,9 +337,7 @@ def test_dates_ordered(
 
     df = pl.DataFrame(data)
     violations = df.filter(pl.col('dropoff_datetime') < pl.col('pickup_datetime'))
-    is_valid = violations.height == 0
-    assert is_valid, f'{violations.height} rows have dropoff before pickup'
-    return is_valid
+    return violations.height == 0
 ```
 
 ### Output Column Validation
@@ -404,7 +384,7 @@ bauplan run --dry-run
 bauplan run
 ```
 
-After a run, expectation results appear in the run output. Failed expectations show the assertion message. Use `bauplan job logs <job_id>` to review results from a previous run.
+After a run, expectation results appear in the run output. Use `bauplan job logs <job_id>` to review results from a previous run.
 
 ## Ingestion Validation
 
@@ -447,7 +427,7 @@ def validate_import(client, table_name, branch, namespace="bauplan"):
     row_count = result.column("n")[0].as_py()
     assert row_count > 0, f"{fq_table} has 0 rows after import"
 
-    # WARN checks — print, don't assert
+    # WARN checks — print, don't assert (the script decides what blocks the merge)
     result = client.query(f"SELECT MIN(total) as lo FROM {fq_table}", ref=branch)
     if result.column("lo")[0].as_py() < 0:
         print(f"⚠ negative totals found")
@@ -463,7 +443,7 @@ def validate_import(client, table_name, branch, namespace="bauplan"):
 | Input            | Arrow table via `bauplan.Model()` | SDK queries via `client.query()` |
 | Execution        | Automatic during `bauplan run`    | Called explicitly in script      |
 | Data access      | In-memory Arrow table             | SQL queries against branch       |
-| Failure handling | `assert` halts pipeline           | `assert` prevents merge          |
+| Failure handling | Return `False` (strict mode)      | Raise to block the merge         |
 | Environment      | Containerized per-function        | Local Python process             |
 
 ### Query Patterns by Dimension
