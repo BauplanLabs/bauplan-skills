@@ -5,5 +5,5 @@ description = "Claude Code skills for Bauplan data lakehouse workflows"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
-    "bauplan>=0.3.3",
+    "bauplan>=0.3.4",
 ]

@@ -28,7 +28,7 @@ The complete old-to-new pattern catalog with real code is in [examples.md](examp
 |---|---|
 | `data=bauplan.Model("t", columns=[...], filter=...)` | `data: Annotated[pa.Table, Model("t", projection_schema=SomeSchema, filter=...)]` |
 | `@bauplan.model(columns=[...])` | `@bauplan.model()` + `-> Annotated[pa.Table, OutputSchema]` |
-| no schema objects | `class SomeSchema(TableSchema)` with typed fields, optional `TableField(doc=, lineage=)` |
+| no schema objects | `class SomeSchema(TableSchema)` with typed fields, optional `TableField(name=, doc=, lineage=)` |
 | `x=bauplan.Parameter("x")` | `x: Annotated[float, Parameter("x")]` |
 | return list/pandas/polars/arrow | return an actual `pa.Table` |
 
@@ -95,6 +95,8 @@ Map catalog types to the field types listed in [examples.md](examples.md#5-decla
 
 Nested types (list, struct, map) and decimals have no field type at all. Annotate those fields as `bauplan.Any`, the SDK's passthrough type rather than `typing.Any`: the column keeps its real type at runtime, the contract just does not pin it. This applies to output schemas and to `projection_schema` classes migrated from an old `columns=[...]` list, so a nested or decimal column is never a reason to drop a projection or a return annotation. Flag every `Any` field in the report.
 
+A schema field is a class attribute, so its name must be a valid Python identifier. Use `TableField(name=...)` for every column whose name is not one: a name with a space, a dash or another symbol, a leading digit, or a Python keyword such as `class`. Give the attribute an identifier and set `name=` to the exact column name from the catalog or the old `columns=[...]` list: `passenger_class: Annotated[Int64 | None, TableField(name="Passenger Class")]`. Leave `name=` out when the column name is already a valid identifier. Do not rename the column to avoid it: the table and the model body keep the real column name.
+
 `table get` also surfaces any documentation the source tables already have: the table comment above the schema, column docs in the `DOC` column, or `properties.comment` and `fields[].doc` in the JSON output. A pipeline on the old SDK had no way to persist either, but they may have been written outside of Bauplan; capture any existing documentation for item 8 of step 5.
 
 ### Step 5: Rewrite
@@ -102,7 +104,7 @@ Nested types (list, struct, map) and decimals have no field type at all. Annotat
 Apply the patterns from [examples.md](examples.md) to each file, in this order:
 
 1. imports (pattern 1)
-2. one `TableSchema` class per input projection and one per model output, with `| None` on every column the catalog marks nullable (patterns 3, 4, 5)
+2. one `TableSchema` class per input projection and one per model output, with `| None` on every column the catalog marks nullable and `TableField(name=...)` on every column whose name is not a Python identifier (patterns 3, 4, 5)
 3. inputs from default arguments to `Annotated` (pattern 2)
 4. return annotations on every model, `-> bool` on every expectation (patterns 4, 6)
 5. parameters to `Annotated` (pattern 7)
@@ -129,7 +131,7 @@ Known error signatures and their causes:
 - `A model cannot have input arguments without a default value: "<name>" found`, usually together with `A model must have at least one input model` (same pair for expectations), on lines you migrated: the environment does NOT understand the typed syntax yet, on the client side or on the backend side. The migrated code is fine. Do NOT "fix" it by reverting to default-argument inputs; re-check the SDK probe from step 3, then report to the user that their environment predates typed-SDK support and stop at static validation.
 - `returns unknown schema "<Name>"`: the return annotation names a class that does not exist, is misspelled, or does not inherit directly from `TableSchema`.
 - `Model must have a valid return type annotation`, or `Model return type annotation must be of the form: Annotated[pyarrow.Table, SchemaType]`: a model was left without a return annotation, or with a bare `-> pa.Table`. Every model needs a schema contract, so give it one instead of removing the annotation.
-- `Unexpected TableField parameter: <name>`: `TableField` takes only `doc` and `lineage`. `title` and `nullable` are gone; nullability is `| None` on the type.
+- `Unexpected TableField parameter: <name>`: `TableField` takes only `name`, `doc` and `lineage`. `title` and `nullable` are gone; nullability is `| None` on the type.
 - `only the data type may be marked optional`: the `| None` was wrapped around the whole `Annotated[...]` instead of sitting on the data type inside it.
 - `while parsing your code`: syntax-level problem in the rewritten file; re-read the corresponding pattern in examples.md.
 - `ModelOutputContractError` on a full run: the returned table does not match the contract exactly, either because the output schema declares columns or types the function does not produce, or because the function returns a column the schema does not declare; fix the schema or add a cast (pattern 9).
@@ -145,7 +147,7 @@ Summarize for the user: files rewritten, schema classes created (and which table
 
 - [ ] Step 1: Inventory all models, expectations, inputs, parameters, returns
 - [ ] Step 2: Report blockers (`connector`/`ref` kwargs, non-literal filters, `internet_access`)
-- [ ] Step 3: Upgrade Python to >= 3.11 (**mandatory**), then the project dependency to the typed SDK (~=0.3.2)
+- [ ] Step 3: Upgrade Python to >= 3.11 (**mandatory**), then the project dependency to the typed SDK (~=0.3.4)
 - [ ] Step 4: Read source table schemas and docs → `uv run bauplan table get <namespace>.<table> -O json`
 - [ ] Step 5: Rewrite files following [examples.md](examples.md), then ask the user whether to add documentation
 - [ ] Step 6: Create validation branch → `uvx ruff check` → `uvx ty check` → dry run → full run → iterate until green
