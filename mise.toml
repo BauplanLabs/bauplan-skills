@@ -1,0 +1,7 @@
+[tools]
+git-cliff = "2"
+uv = "0.13.0"
+
+[hooks]
+enter = { run = "test -f .git/hooks/commit-msg || uv run --locked prek install", shell = "sh -c" }
+postinstall = { run = "test -f .git/hooks/commit-msg || uv run --locked prek install", shell = "sh -c" }
