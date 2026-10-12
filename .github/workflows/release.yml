@@ -1,0 +1,152 @@
+name: Release
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      release-as:
+        description: "Override version (e.g. 2.3.0)"
+        required: false
+        type: string
+
+permissions: {}
+
+jobs:
+  # Creates a tag and GitHub release for the current version if there is none
+  # yet. The version is whatever pyproject.toml says, so a merged release PR
+  # (see below) is what triggers a release.
+  release:
+    name: Release
+    runs-on: ubuntu-latest
+    if: ${{ github.repository_owner == 'BauplanLabs' }}
+    concurrency:
+      group: release-${{ github.ref }}
+      cancel-in-progress: false
+    outputs:
+      release_created: ${{ steps.check.outputs.release_created }}
+      tag: ${{ steps.check.outputs.tag }}
+    permissions:
+      contents: write # Create tags and GitHub releases
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: jdx/mise-action@08ae2a091c038e1e05ec6f5115dc5c69d5a2a6b8 # v5.1.2
+      - name: Check that version files agree
+        run: |
+          project=$(uv version --short)
+          plugin=$(jq -r .version plugins/bauplan/.claude-plugin/plugin.json)
+          ref=$(jq -r '.plugins[0].source.ref' .claude-plugin/marketplace.json)
+          if [ "$project" != "$plugin" ] || [ "$ref" != "v${project}" ]; then
+            echo "::error::pyproject.toml says ${project}, plugin.json says ${plugin}, marketplace.json ref is ${ref}"
+            exit 1
+          fi
+      - name: Check for unreleased version
+        id: check
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          current=$(uv version --short)
+          tag="v${current}"
+          resp=$(gh api "repos/${GITHUB_REPOSITORY}/releases/tags/${tag}" 2>/dev/null) || true
+          status=$(echo "$resp" | jq -r '.status // "ok"')
+
+          if [ "$status" = "ok" ]; then
+            echo "release_created=false" >> "$GITHUB_OUTPUT"
+            echo "tag=" >> "$GITHUB_OUTPUT"
+            echo "Version ${current} already released."
+          elif [ "$status" = "404" ]; then
+            echo "release_created=true" >> "$GITHUB_OUTPUT"
+            echo "tag=${tag}" >> "$GITHUB_OUTPUT"
+            echo "New version ${current} found, creating release."
+          else
+            echo "::error::Failed to check release ${tag}: ${resp}"
+            exit 1
+          fi
+      - name: Create GitHub release
+        if: steps.check.outputs.release_created == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ steps.check.outputs.tag }}
+        run: |
+          notes=$(git-cliff --tag "${TAG}" --unreleased)
+
+          # Release at the commit of the merged release PR. Fall back to the
+          # pushed commit when there is none, e.g. for a version bumped by hand.
+          release_sha=$(gh pr list --state merged --head "release/${TAG}" \
+            --json mergeCommit --jq '.[0].mergeCommit.oid')
+          if [ -z "$release_sha" ]; then
+            echo "::notice::No merged release PR for ${TAG}, releasing ${GITHUB_SHA}"
+            release_sha="$GITHUB_SHA"
+          fi
+
+          # gh release create creates both the tag and the release.
+          gh release create "$TAG" --target "$release_sha" --notes "$notes"
+
+  # Creates or updates a PR that bumps the version and changelog for the next
+  # release, based on conventional commits since the last tag. Runs after the
+  # release job so a tag created just now is already visible.
+  release-pr:
+    name: Release PR
+    needs: release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # Push release branch
+      pull-requests: write # Create/update release PR
+    concurrency:
+      group: release-pr-${{ github.ref }}
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: jdx/mise-action@08ae2a091c038e1e05ec6f5115dc5c69d5a2a6b8 # v5.1.2
+      - name: Compute version bump
+        id: bump
+        env:
+          RELEASE_AS: ${{ inputs.release-as }}
+        run: |
+          if [ -n "$RELEASE_AS" ]; then
+            bump="v${RELEASE_AS#v}"
+          else
+            bump=$(git-cliff --bumped-version --unreleased)
+          fi
+          current="v$(uv version --short)"
+          echo "current_version=${current}" >> "$GITHUB_OUTPUT"
+          echo "bumped_version=${bump}" >> "$GITHUB_OUTPUT"
+          echo "Current: ${current}, bump: ${bump}"
+      - name: Prepare release
+        if: steps.bump.outputs.current_version != steps.bump.outputs.bumped_version
+        env:
+          VERSION: ${{ steps.bump.outputs.bumped_version }}
+        run: |
+          # Bump the version in pyproject.toml, uv.lock and the plugin manifest,
+          # and point the marketplace at the release tag.
+          uv version --no-sync "${VERSION#v}"
+          sed -i -E "s/(\"version\": \")[^\"]+/\1${VERSION#v}/" plugins/bauplan/.claude-plugin/plugin.json
+          sed -i -E "s/(\"ref\": \")[^\"]+/\1${VERSION}/" .claude-plugin/marketplace.json
+
+          # Generate the changelog.
+          git-cliff --tag "${VERSION}" --unreleased --prepend CHANGELOG.md
+
+          # Save the unreleased notes for the PR body.
+          git-cliff --tag "${VERSION}" --unreleased > "${RUNNER_TEMP}/release-notes.md"
+      - name: Create or update release PR
+        if: steps.bump.outputs.current_version != steps.bump.outputs.bumped_version
+        uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1 # zizmor: ignore[superfluous-actions]
+        with:
+          branch: release/${{ steps.bump.outputs.bumped_version }}
+          title: "chore: release ${{ steps.bump.outputs.bumped_version }}"
+          body-path: ${{ runner.temp }}/release-notes.md
+          commit-message: "chore: release ${{ steps.bump.outputs.bumped_version }}"
+          add-paths: |
+            pyproject.toml
+            uv.lock
+            plugins/bauplan/.claude-plugin/plugin.json
+            .claude-plugin/marketplace.json
+            CHANGELOG.md
+          delete-branch: true
+          sign-commits: true

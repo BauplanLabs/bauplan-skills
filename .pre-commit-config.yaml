@@ -1,0 +1,10 @@
+default_install_hook_types: [pre-commit, commit-msg]
+repos:
+  - repo: local
+    hooks:
+      - id: gitlint
+        name: gitlint
+        description: Checks the commit message against .gitlint
+        entry: uv run --locked gitlint --staged --msg-filename
+        language: system
+        stages: [commit-msg]
