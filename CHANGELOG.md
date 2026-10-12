@@ -1,4 +1,14 @@
 
+## [2.3.0] - 2026-10-12
+
+### New Features
+
+- Document the `name` parameter of `TableField` (03cd4bc)
+
+### Bugfixes
+
+- Remove WARN examples from pipeline expectations (de33f80)
+
 ## [2.2.0] - 2026-10-07
 
 ### New Features
