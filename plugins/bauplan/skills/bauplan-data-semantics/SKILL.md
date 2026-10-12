@@ -91,7 +91,7 @@ Three consequences for a draft:
 
 * **Docs ship with a run.** They exist only after `bauplan run` materializes the table, and reach `main` only through a merge.
 * **Docstrings pass through `inspect.cleandoc`**, so indentation is normalized but spacing *within* a line is preserved verbatim. A whitespace-only docstring means no documentation at all.
-* **`TableField` accepts only `doc` and `lineage`**; anything else fails with `Unexpected TableField parameter: <name>`. `lineage=OtherSchema['field']` records provenance, not meaning, and does not substitute for `doc`.
+* **`TableField` accepts only `name`, `doc` and `lineage`**; anything else fails with `Unexpected TableField parameter: <name>`. `name=` (0.3.3+) carries the real column name when it is not a valid Python identifier, so document the column under that name, not the attribute's. `lineage=OtherSchema['field']` records provenance, not meaning, and does not substitute for `doc`.
 
 ---
 
