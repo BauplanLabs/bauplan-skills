@@ -148,5 +148,6 @@ jobs:
             plugins/bauplan/.claude-plugin/plugin.json
             .claude-plugin/marketplace.json
             CHANGELOG.md
+          author: github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>
           delete-branch: true
           sign-commits: true
