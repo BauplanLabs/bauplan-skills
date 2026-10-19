@@ -1,6 +1,6 @@
 [project]
 name = "bauplan-skills"
-version = "2.3.0"
+version = "2.4.0"
 description = "Claude Code skills for Bauplan data lakehouse workflows"
 readme = "README.md"
 requires-python = ">=3.13"
