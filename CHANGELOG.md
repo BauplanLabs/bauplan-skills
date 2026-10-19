@@ -1,4 +1,10 @@
 
+## [2.4.0] - 2026-10-19
+
+### New Features
+
+- Bump polars, duckdb and python in skill examples (dedd69e)
+
 ## [2.3.0] - 2026-10-12
 
 ### New Features

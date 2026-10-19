@@ -18,7 +18,7 @@
         "source": "git-subdir",
         "url": "https://github.com/BauplanLabs/bauplan-skills.git",
         "path": "plugins/bauplan",
-        "ref": "v2.3.0"
+        "ref": "v2.4.0"
       },
       "homepage": "https://github.com/BauplanLabs/bauplan-skills/tree/main/plugins/bauplan"
     }
