@@ -177,7 +177,7 @@ Old:
 
 ```python
 @bauplan.expectation()
-@bauplan.python("3.11")
+@bauplan.python("3.13")
 def test_txn_id_unique(
     data=bauplan.Model("transactions", columns=["txn_id"]),
 ):
@@ -195,7 +195,7 @@ class TxnId(TableSchema):
 
 
 @bauplan.expectation()
-@bauplan.python("3.11")
+@bauplan.python("3.13")
 def test_txn_id_unique(
     data: Annotated[pa.Table, Model("transactions", projection_schema=TxnId)],
 ) -> bool:
@@ -271,7 +271,7 @@ import bauplan
 from bauplan.standard_expectations import expect_column_all_unique
 
 
-@bauplan.python("3.12", pip={"polars": "1.37"})
+@bauplan.python("3.13", pip={"polars": "2.0.0"})
 @bauplan.model()
 def survival_rate_by_age(
     passengers=bauplan.Model(
@@ -291,7 +291,7 @@ def survival_rate_by_age(
 
 
 @bauplan.expectation()
-@bauplan.python("3.12")
+@bauplan.python("3.13")
 def test_age(data=bauplan.Model("survival_rate_by_age", columns=["Age"])):
     """Validates that the Age bins are unique"""
     return expect_column_all_unique(data, "Age")
@@ -332,7 +332,7 @@ class SurvivalRateSchema(bauplan.TableSchema):
     survival_rate: bauplan.Float64 | None
 
 
-@bauplan.python("3.12", pip={"polars": "1.37"})
+@bauplan.python("3.13", pip={"polars": "2.0.0"})
 @bauplan.model()
 def survival_rate_by_age(
     passengers: Annotated[
@@ -363,7 +363,7 @@ class AgeOnly(bauplan.TableSchema):
 
 
 @bauplan.expectation()
-@bauplan.python("3.12")
+@bauplan.python("3.13")
 def test_age(
     data: Annotated[
         pa.Table,

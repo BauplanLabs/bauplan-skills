@@ -32,7 +32,7 @@ class MonthlyBilling(TableSchema):
 
 
 @bauplan.model(materialization_strategy="REPLACE")
-@bauplan.python("3.12", pip={"polars": "1.42.1"})
+@bauplan.python("3.13", pip={"polars": "2.0.0"})
 def monthly_billing(
     transactions: Annotated[pa.Table, Model("raw.transactions")],
     accounts: Annotated[pa.Table, Model("raw.accounts")],
@@ -93,7 +93,7 @@ class BillingLines(TableSchema):
 
 
 @bauplan.model()
-@bauplan.python("3.12", pip={"polars": "1.42.1"})
+@bauplan.python("3.13", pip={"polars": "2.0.0"})
 def prepared_transactions(
     transactions: Annotated[pa.Table, Model("raw.transactions", projection_schema=TransactionColumns)],
 ) -> Annotated[pa.Table, PreparedTransactions]:
@@ -104,7 +104,7 @@ def prepared_transactions(
 
 
 @bauplan.model()
-@bauplan.python("3.12", pip={"polars": "1.42.1"})
+@bauplan.python("3.13", pip={"polars": "2.0.0"})
 def prepared_accounts(
     accounts: Annotated[pa.Table, Model("raw.accounts", projection_schema=AccountColumns)],
 ) -> Annotated[pa.Table, PreparedAccounts]:
@@ -115,7 +115,7 @@ def prepared_accounts(
 
 
 @bauplan.model()
-@bauplan.python("3.12", pip={"polars": "1.42.1"})
+@bauplan.python("3.13", pip={"polars": "2.0.0"})
 def billing_lines(
     transactions: Annotated[pa.Table, Model("prepared_transactions")],
     accounts: Annotated[pa.Table, Model("prepared_accounts")],
@@ -127,7 +127,7 @@ def billing_lines(
 
 
 @bauplan.model(materialization_strategy="REPLACE")
-@bauplan.python("3.12", pip={"polars": "1.42.1"})
+@bauplan.python("3.13", pip={"polars": "2.0.0"})
 def monthly_billing(
     lines: Annotated[pa.Table, Model("billing_lines")],
 ) -> Annotated[pa.Table, MonthlyBilling]:
@@ -179,7 +179,7 @@ class RecentEvents(TableSchema):
 
 
 @bauplan.model()
-@bauplan.python("3.12")
+@bauplan.python("3.13")
 def recent_events(
     events: Annotated[
         pa.Table,
@@ -220,7 +220,7 @@ class MonthlyFxRates(TableSchema):
 
 
 @bauplan.model()
-@bauplan.python("3.12", pip={"polars": "1.42.1"})
+@bauplan.python("3.13", pip={"polars": "2.0.0"})
 def monthly_fx_rates(
     rates: Annotated[pa.Table, Model("raw.fx_rates", projection_schema=RateColumns)],
 ) -> Annotated[pa.Table, MonthlyFxRates]:
@@ -242,7 +242,7 @@ Consumers declare `fx: Annotated[pa.Table, Model("monthly_fx_rates")]`.
 
 ```python
 @bauplan.model()
-@bauplan.python("3.12", pip={"polars": "1.42.1"})
+@bauplan.python("3.13", pip={"polars": "2.0.0"})
 def revenue_base(
     lines: Annotated[pa.Table, Model("billing_lines")],
     fx: Annotated[pa.Table, Model("monthly_fx_rates")],
@@ -252,7 +252,7 @@ def revenue_base(
 
 
 @bauplan.model(materialization_strategy="REPLACE")
-@bauplan.python("3.12", pip={"polars": "1.42.1"})
+@bauplan.python("3.13", pip={"polars": "2.0.0"})
 def recurring_revenue(
     base: Annotated[pa.Table, Model("revenue_base")],
 ) -> Annotated[pa.Table, RecurringRevenue]:
@@ -261,7 +261,7 @@ def recurring_revenue(
 
 
 @bauplan.model(materialization_strategy="REPLACE")
-@bauplan.python("3.12", pip={"polars": "1.42.1"})
+@bauplan.python("3.13", pip={"polars": "2.0.0"})
 def one_off_revenue(
     base: Annotated[pa.Table, Model("revenue_base")],
 ) -> Annotated[pa.Table, OneOffRevenue]:
@@ -297,7 +297,7 @@ class CleanEvents(TableSchema):
 
 
 @bauplan.model(materialization_strategy="REPLACE", partitioned_by=["month(event_date)"])
-@bauplan.python("3.12")
+@bauplan.python("3.13")
 def events_clean(
     events: Annotated[pa.Table, Model("raw.events", projection_schema=EventDateColumns)],
 ) -> Annotated[pa.Table, CleanEvents]:
@@ -331,7 +331,7 @@ class MonthlyTotals(TableSchema):
     partitioned_by=["month"],
     overwrite_filter="month >= $first_open_month",
 )
-@bauplan.python("3.12", pip={"polars": "1.42.1"})
+@bauplan.python("3.13", pip={"polars": "2.0.0"})
 def monthly_totals(
     lines: Annotated[
         pa.Table,
