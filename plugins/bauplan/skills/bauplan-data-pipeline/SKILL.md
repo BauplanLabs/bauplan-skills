@@ -25,7 +25,7 @@ Branch naming convention: `<username>.<branch_name>` (e.g., `john.feature-pipeli
 
 Before writing pipeline code, check whether the project uses `uv` (look for `pyproject.toml` or `uv.lock`). If so, use `uv run` to execute commands and `uv add` to install packages. Otherwise, use `pip install`.
 
-Ensure the environment has a typed SDK build (0.3.0+). Typed declarations are only available with SDK 0.3.0+: older versions are *not* compatible. Use that same environment for all CLI commands and verify connectivity with `bauplan info`. Models declare their own runtime dependencies via `@bauplan.python('3.11', pip={...})`; annotation imports require `pyarrow` locally too.
+Ensure the environment has a typed SDK build (0.3.0+). Typed declarations are only available with SDK 0.3.0+: older versions are *not* compatible. Use that same environment for all CLI commands and verify connectivity with `bauplan info`. Models declare their own runtime dependencies via `@bauplan.python('3.13', pip={...})`; annotation imports require `pyarrow` locally too.
 
 ## Table References
 - Source tables must already exist in the bauplan lakehouse before building a pipeline.
@@ -97,7 +97,7 @@ class CleanTripsSchema(bauplan.TableSchema):
     materialization_strategy='REPLACE'
 )
 # specify Python version and dependencies; prefer Polars or DuckDB over Pandas
-@bauplan.python('3.11', pip={'polars': '1.15.0'})
+@bauplan.python('3.13', pip={'polars': '2.0.0'})
 def clean_trips(
     # Projection and filtering restrict the data read before the function runs
     data: Annotated[

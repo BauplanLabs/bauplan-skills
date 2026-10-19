@@ -73,7 +73,7 @@ class ConversionRateExpectationColumns(bauplan.TableSchema):
 
 
 @bauplan.expectation()
-@bauplan.python("3.11")
+@bauplan.python("3.13")
 def test_staging_no_null_sessions(
     data: Annotated[
         pa.Table,
@@ -90,7 +90,7 @@ def test_staging_no_null_sessions(
 
 
 @bauplan.expectation()
-@bauplan.python("3.11")
+@bauplan.python("3.13")
 def test_staging_no_null_event_time(
     data: Annotated[
         pa.Table,
@@ -107,7 +107,7 @@ def test_staging_no_null_event_time(
 
 
 @bauplan.expectation()
-@bauplan.python("3.11")
+@bauplan.python("3.13")
 def test_staging_valid_event_types(
     data: Annotated[
         pa.Table,
@@ -126,7 +126,7 @@ def test_staging_valid_event_types(
 
 
 @bauplan.expectation()
-@bauplan.python("3.11")
+@bauplan.python("3.13")
 def test_staging_positive_prices(
     data: Annotated[
         pa.Table,
@@ -144,7 +144,7 @@ def test_staging_positive_prices(
 
 
 @bauplan.expectation()
-@bauplan.python("3.11")
+@bauplan.python("3.13")
 def test_staging_minimum_rows(
     data: Annotated[pa.Table, bauplan.Model("staging")],
 ) -> bool:
@@ -164,7 +164,7 @@ def test_staging_minimum_rows(
 
 
 @bauplan.expectation()
-@bauplan.python("3.11")
+@bauplan.python("3.13")
 def test_sessions_unique(
     data: Annotated[
         pa.Table,
@@ -181,7 +181,7 @@ def test_sessions_unique(
 
 
 @bauplan.expectation()
-@bauplan.python("3.11")
+@bauplan.python("3.13")
 def test_sessions_no_null_revenue(
     data: Annotated[
         pa.Table,
@@ -206,7 +206,7 @@ def test_sessions_no_null_revenue(
 
 
 @bauplan.expectation()
-@bauplan.python("3.11", pip={"polars": "1.15.0"})
+@bauplan.python("3.13", pip={"polars": "2.0.0"})
 def test_daily_summary_freshness(
     data: Annotated[
         pa.Table,
@@ -230,7 +230,7 @@ def test_daily_summary_freshness(
 
 
 @bauplan.expectation()
-@bauplan.python("3.11")
+@bauplan.python("3.13")
 def test_daily_summary_no_null_dates(
     data: Annotated[
         pa.Table,
@@ -247,7 +247,7 @@ def test_daily_summary_no_null_dates(
 
 
 @bauplan.expectation()
-@bauplan.python("3.11")
+@bauplan.python("3.13")
 def test_daily_summary_reasonable_conversion(
     data: Annotated[
         pa.Table,

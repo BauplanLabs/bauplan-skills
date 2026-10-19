@@ -55,7 +55,7 @@ class CleanPassengerSchema(bauplan.TableSchema):
 
 
 @bauplan.model()
-@bauplan.python('3.11')
+@bauplan.python('3.13')
 def titanic_clean(
     data: Annotated[
         pa.Table, bauplan.Model('titanic', projection_schema=PassengerColumns)
@@ -102,7 +102,7 @@ Streams output as Arrow table without persisting to storage:
 
 ```python
 @bauplan.model()  # No materialization_strategy = NONE
-@bauplan.python('3.11')
+@bauplan.python('3.13')
 def intermediate_transform(
     data: Annotated[pa.Table, bauplan.Model('source', projection_schema=EventSchema)],
 ) -> Annotated[pa.Table, EventSchema]:
@@ -115,7 +115,7 @@ Replaces entire table on each run. Use for most pipelines:
 
 ```python
 @bauplan.model(materialization_strategy='REPLACE')
-@bauplan.python('3.11')
+@bauplan.python('3.13')
 def daily_summary(
     data: Annotated[pa.Table, bauplan.Model('events', projection_schema=EventSchema)],
 ) -> Annotated[pa.Table, EventSchema]:
@@ -128,7 +128,7 @@ Adds new rows to existing table:
 
 ```python
 @bauplan.model(materialization_strategy='APPEND')
-@bauplan.python('3.11')
+@bauplan.python('3.13')
 def event_log(
     data: Annotated[
         pa.Table,
@@ -176,7 +176,7 @@ class PartitionedTripSchema(bauplan.TableSchema):
     materialization_strategy='OVERWRITE_PARTITIONS',
     overwrite_filter="pickup_datetime >= '2024-01-15' AND pickup_datetime < '2024-01-16'"
 )
-@bauplan.python('3.11')
+@bauplan.python('3.13')
 def partitioned_trips(
     data: Annotated[
         pa.Table,
@@ -212,7 +212,7 @@ class PurchaseAnalyticsSchema(bauplan.TableSchema):
 
 
 @bauplan.model(materialization_strategy='REPLACE')
-@bauplan.python('3.11', pip={'duckdb': '1.0.0'})
+@bauplan.python('3.13', pip={'duckdb': '1.3.2'})
 def purchase_analytics(
     # Projection and filtering apply before the function receives the table (pushdown)
     events: Annotated[
@@ -277,7 +277,7 @@ class TripsWithZonesSchema(bauplan.TableSchema):
 
 
 @bauplan.model(materialization_strategy='REPLACE')
-@bauplan.python('3.11', pip={'polars': '1.15.0'})
+@bauplan.python('3.13', pip={'polars': '2.0.0'})
 def trips_with_zones(
     trips: Annotated[
         pa.Table, bauplan.Model('taxi_trips', projection_schema=SessionTripColumns)
@@ -337,7 +337,7 @@ class DecemberTripsSchema(bauplan.TableSchema):
 
 # ZoneColumns is defined in the multiple-input example above
 @bauplan.model()
-@bauplan.python('3.11')
+@bauplan.python('3.13')
 def optimized_model(
     trips: Annotated[
         pa.Table,
@@ -374,7 +374,7 @@ from bauplan.standard_expectations import (
 )
 
 @bauplan.expectation()
-@bauplan.python('3.11')
+@bauplan.python('3.13')
 def test_no_null_ids(
     data: Annotated[pa.Table, bauplan.Model('clean_orders')],
 ) -> bool:
@@ -382,7 +382,7 @@ def test_no_null_ids(
     return expect_column_no_nulls(data, 'order_id')
 
 @bauplan.expectation()
-@bauplan.python('3.11')
+@bauplan.python('3.13')
 def test_unique_order_ids(
     data: Annotated[pa.Table, bauplan.Model('clean_orders')],
 ) -> bool:
@@ -390,7 +390,7 @@ def test_unique_order_ids(
     return expect_column_all_unique(data, 'order_id')
 
 @bauplan.expectation()
-@bauplan.python('3.11')
+@bauplan.python('3.13')
 def test_reasonable_trip_distance(
     data: Annotated[pa.Table, bauplan.Model('clean_trips')],
 ) -> bool:
@@ -523,7 +523,7 @@ class DailySummarySchema(bauplan.TableSchema):
 # ============================================================================
 
 @bauplan.model(materialization_strategy='REPLACE')
-@bauplan.python('3.11', pip={'polars': '1.15.0'})
+@bauplan.python('3.13', pip={'polars': '2.0.0'})
 def staging(
     raw: Annotated[
         pa.Table,
@@ -558,7 +558,7 @@ def staging(
 # ============================================================================
 
 @bauplan.model(materialization_strategy='REPLACE')
-@bauplan.python('3.11', pip={'polars': '1.15.0'})
+@bauplan.python('3.13', pip={'polars': '2.0.0'})
 def session_metrics(
     staging: Annotated[
         pa.Table, bauplan.Model('staging', projection_schema=SessionEventColumns)
@@ -598,7 +598,7 @@ def session_metrics(
 # ============================================================================
 
 @bauplan.model(materialization_strategy='REPLACE')
-@bauplan.python('3.11', pip={'polars': '1.15.0'})
+@bauplan.python('3.13', pip={'polars': '2.0.0'})
 def daily_summary(
     sessions: Annotated[
         pa.Table,
@@ -642,7 +642,7 @@ from bauplan.standard_expectations import expect_column_no_nulls
 
 
 @bauplan.expectation()
-@bauplan.python('3.11')
+@bauplan.python('3.13')
 def test_staging_no_null_user_session(
     data: Annotated[pa.Table, bauplan.Model('staging')],
 ) -> bool:
@@ -651,7 +651,7 @@ def test_staging_no_null_user_session(
 
 
 @bauplan.expectation()
-@bauplan.python('3.11')
+@bauplan.python('3.13')
 def test_staging_no_null_event_time(
     data: Annotated[pa.Table, bauplan.Model('staging')],
 ) -> bool:

@@ -44,7 +44,7 @@ Ensure the required packages are installed:
 - `bauplan` (the Bauplan Python SDK — required)
 - `polars` (if custom expectations need DataFrame operations — zero-copy Arrow interop)
 
-Ensure the environment has a typed SDK build (0.3.0+). Typed declarations are only available with SDK 0.3.0+: older versions are *not* compatible. Use that same environment for all CLI commands and verify connectivity with `bauplan info`. Models declare their own runtime dependencies via `@bauplan.python('3.11', pip={...})`; annotation imports require `pyarrow` locally too.
+Ensure the environment has a typed SDK build (0.3.0+). Typed declarations are only available with SDK 0.3.0+: older versions are *not* compatible. Use that same environment for all CLI commands and verify connectivity with `bauplan info`. Models declare their own runtime dependencies via `@bauplan.python('3.13', pip={...})`; annotation imports require `pyarrow` locally too.
 
 **Do not use pandas.** Bauplan's `client.query()` returns a PyArrow table directly: no `.to_arrow()` call needed. In pipeline expectations, model inputs arrive as Arrow tables too. Polars reads Arrow natively with zero-copy (`pl.DataFrame(table)`). Pandas requires a full data copy and is slower.
 
@@ -214,7 +214,7 @@ class OrderIdCheckColumns(bauplan.TableSchema):
     order_id: bauplan.String | None
 
 @bauplan.expectation()
-@bauplan.python('3.11')
+@bauplan.python('3.13')
 def test_no_null_order_ids(
     data: Annotated[
         pa.Table, bauplan.Model('clean_orders', projection_schema=OrderIdCheckColumns)
@@ -262,7 +262,7 @@ class EventTypeCheckColumns(bauplan.TableSchema):
 
 
 @bauplan.expectation()
-@bauplan.python('3.11')
+@bauplan.python('3.13')
 def test_valid_event_types(
     data: Annotated[
         pa.Table, bauplan.Model('staging', projection_schema=EventTypeCheckColumns)
@@ -288,7 +288,7 @@ class SummaryDateCheckColumns(bauplan.TableSchema):
 
 
 @bauplan.expectation()
-@bauplan.python('3.11', pip={'polars': '1.15.0'})
+@bauplan.python('3.13', pip={'polars': '2.0.0'})
 def test_data_freshness(
     data: Annotated[
         pa.Table, bauplan.Model('daily_summary', projection_schema=SummaryDateCheckColumns)
@@ -307,7 +307,7 @@ def test_data_freshness(
 **Volume check:**
 ```python
 @bauplan.expectation()
-@bauplan.python('3.11')
+@bauplan.python('3.13')
 def test_minimum_row_count(
     data: Annotated[pa.Table, bauplan.Model('staging')],
 ) -> bool:
@@ -326,7 +326,7 @@ class TripTimeCheckColumns(bauplan.TableSchema):
 
 
 @bauplan.expectation()
-@bauplan.python('3.11', pip={'polars': '1.15.0'})
+@bauplan.python('3.13', pip={'polars': '2.0.0'})
 def test_dates_ordered(
     data: Annotated[
         pa.Table, bauplan.Model('trips', projection_schema=TripTimeCheckColumns)
@@ -355,7 +355,7 @@ class CleanOrdersSchema(bauplan.TableSchema):
 
 
 @bauplan.model(materialization_strategy='REPLACE')
-@bauplan.python('3.11')
+@bauplan.python('3.13')
 def clean_orders(
     data: Annotated[
         pa.Table, bauplan.Model('raw_orders', projection_schema=CleanOrdersSchema)
