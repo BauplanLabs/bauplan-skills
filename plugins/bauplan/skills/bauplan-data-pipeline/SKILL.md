@@ -178,7 +178,7 @@ See [examples.md](examples.md#io-pushdown-with-column-selection-and-filtering) f
 Use Polars or DuckDB for data processing inside Python models. **Do not use Pandas.** Bauplan models receive and return Apache Arrow tables. Polars and DuckDB operate natively on Arrow with zero-copy reads and multi-threaded execution. Pandas requires a full data copy into its own format — slower, single-threaded, and uses significantly more memory.
 
 - **Polars**: best for DataFrame-style transformations (filter, join, group_by, with_columns). Convert with `pl.DataFrame(data)` on input, `result.to_arrow()` on output. Prefer `pl.DataFrame` over `pl.from_arrow` for type-checking purposes.
-- **DuckDB**: best when the logic is naturally expressed as SQL (complex joins, aggregations). Register the Arrow table directly with `con.register("name", data)`.
+- **DuckDB**: best when the logic is naturally expressed as SQL (complex joins, aggregations). Register the Arrow table directly with `con.register("name", data)` and return `con.sql(query).to_arrow_table()`, pinning `duckdb` 2.0.0 or later.
 
 Note: `client.query()` in the SDK returns a PyArrow table directly — no `.to_arrow()` needed. Inside models, the `data` parameter is also already an Arrow table. The only place you call `.to_arrow()` is when converting a Polars DataFrame back to Arrow for the model return value.
 
