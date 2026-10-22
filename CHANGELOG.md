@@ -1,4 +1,10 @@
 
+## [2.5.0] - 2026-10-22
+
+### New Features
+
+- Use duckdb 2.0.0 in skill examples (01779eb)
+
 ## [2.4.0] - 2026-10-19
 
 ### New Features
