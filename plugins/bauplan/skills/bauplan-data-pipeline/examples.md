@@ -212,7 +212,7 @@ class PurchaseAnalyticsSchema(bauplan.TableSchema):
 
 
 @bauplan.model(materialization_strategy='REPLACE')
-@bauplan.python('3.13', pip={'duckdb': '1.3.2'})
+@bauplan.python('3.13', pip={'duckdb': '2.0.0'})
 def purchase_analytics(
     # Projection and filtering apply before the function receives the table (pushdown)
     events: Annotated[
@@ -243,7 +243,7 @@ def purchase_analytics(
         GROUP BY 1, 2
         ORDER BY 2 ASC
     """
-    return con.execute(query).fetch_arrow_table()
+    return con.sql(query).to_arrow_table()
 ```
 
 ### Python Model with Multiple Inputs

@@ -233,7 +233,7 @@ The old runtime accepted an Arrow table, a Polars or pandas DataFrame, or a list
 ```python
     return pa.Table.from_pylist(rows)          # was: return rows (list of dicts)
     return pa.Table.from_pandas(df, preserve_index=False)            # was: return df (pandas)
-    return relation.to_arrow_table()                # was: relation.arrow() (duckdb)
+    return con.sql(query).to_arrow_table()          # was: relation.arrow() (duckdb)
     return df.to_arrow()                            # polars: unchanged
 ```
 
