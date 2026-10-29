@@ -1,6 +1,6 @@
 ---
 name: bauplan-safe-ingestion
-description: "Ingest data from S3 into Bauplan safely using branch isolation and quality checks before publishing. Use when loading new data from S3, importing parquet/csv/jsonl files, or when the user needs to safely load data with validation before merging to main."
+description: "Ingest data from object storage (S3 or GCS) into Bauplan safely using branch isolation and quality checks before publishing. Use when loading new data from S3 or GCS (s3:// or gs:// paths), importing parquet/csv/jsonl files, or when the user needs to safely load data with validation before merging to main."
 allowed-tools:
   - Read
   - Write
@@ -12,7 +12,7 @@ allowed-tools:
 
 # Safe Ingestion
 
-Safely ingest data from S3 into the Bauplan lakehouse by isolating changes on a temporary branch, running quality checks, and only merging to `main` after validation succeeds.
+Safely ingest data from object storage into the Bauplan lakehouse by isolating changes on a temporary branch, running quality checks, and only merging to `main` after validation succeeds.
 This pattern is formally known as Write-Audit-Publish (WAP) in the Iceberg ecosystem.
 
 Implement this as a Python script using the `bauplan` SDK. Do NOT use CLI commands for the ingestion itself.
@@ -40,7 +40,7 @@ Ensure the required packages are installed:
 
 Before writing the script, you MUST gather:
 
-1. **S3 path** (required): The S3 URI pattern for the source data (e.g., `s3://bucket/path/*.parquet`)
+1. **Source path** (required): The URI pattern for the source data, on S3 (e.g., `s3://bucket/path/*.parquet`) or GCS (e.g., `gs://bucket/path/*.parquet`)
 2. **Table name** (required): The name for the target table
 3. **Validation path** (required): See "Choosing a Validation Path" below
 4. **On success behavior** (optional):
@@ -119,7 +119,7 @@ import bauplan
 
 
 TABLE_NAME = "<table_name>"
-S3_PATH = "<s3_uri>"
+SOURCE_URI = "<bucket_uri>"
 NAMESPACE = "bauplan"
 
 
@@ -148,10 +148,10 @@ def main():
 
     try:
         # === IMPORT PHASE ===
-        print(f"\nPhase 1: Creating table '{TABLE_NAME}' from S3...")
+        print(f"\nPhase 1: Creating table '{TABLE_NAME}' from {SOURCE_URI}...")
         client.create_table(
             table=TABLE_NAME,
-            search_uri=S3_PATH,
+            search_uri=SOURCE_URI,
             branch=branch_name,
             namespace=NAMESPACE,
             replace=True,
@@ -161,7 +161,7 @@ def main():
         print(f"  Importing data...")
         import_state = client.import_data(
             table=TABLE_NAME,
-            search_uri=S3_PATH,
+            search_uri=SOURCE_URI,
             branch=branch_name,
             namespace=NAMESPACE,
         )
@@ -204,15 +204,15 @@ if __name__ == "__main__":
 | `client.create_branch(name, from_ref="main")`  | Create a new branch from specified ref                |
 | `client.has_branch(name)`                      | Check if branch exists                                |
 | `client.delete_branch(name)`                   | Delete a branch                                       |
-| `client.create_table(table, search_uri, ...)`  | Create table with schema inferred from S3             |
-| `client.import_data(table, search_uri, ...)`   | Import data from S3 into table                        |
+| `client.create_table(table, search_uri, ...)`  | Create table with schema inferred from source files   |
+| `client.import_data(table, search_uri, ...)`   | Import data from the source files into table          |
 | `client.query(query, ref)`                     | Run SQL query, returns a PyArrow Table directly       |
 | `client.merge_branch(source_ref, into_branch)` | Merge branch into target                              |
 | `client.has_table(table, ref, namespace)`      | Check if table exists on branch                       |
 
 ## Workflow Checklist
 
-- [ ] Ask user for: S3 path, table name, on_success, on_failure
+- [ ] Ask user for: source path, table name, on_success, on_failure
 - [ ] Ask which validation path: A (don't know data), B (know what to check), or C (will add checks later)
 - [ ] Path A or C: write script with minimal validation
 - [ ] Path B: gather check specifications, invoke `bauplan-data-quality-checks` skill, embed result in script
@@ -263,7 +263,7 @@ To append data to a table that already exists on main, skip `create_table` and o
 # Table already exists on main — just import new data
 client.import_data(
     table=table_name,
-    search_uri=s3_path,
+    search_uri=SOURCE_URI,
     namespace=namespace,
     branch=branch_name,
 )
