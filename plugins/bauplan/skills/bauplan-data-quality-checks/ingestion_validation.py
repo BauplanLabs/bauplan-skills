@@ -2,7 +2,7 @@
 Ingestion validation for a safe ingestion using a WAP (Write-Audit-Publish) workflow.
 
 This file demonstrates validation logic embedded in an ingestion script
-that imports order data from S3. The validate_import() function runs
+that imports order data from object storage. The validate_import() function runs
 between import_data() and merge_branch().
 
 Each check documents:
@@ -162,8 +162,8 @@ def validate_import(
 # between the import and merge phases:
 #
 #     # === IMPORT PHASE ===
-#     client.create_table(table=table_name, search_uri=s3_path, ...)
-#     client.import_data(table=table_name, search_uri=s3_path, ...)
+#     client.create_table(table=table_name, search_uri=SOURCE_URI, ...)
+#     client.import_data(table=table_name, search_uri=SOURCE_URI, ...)
 #
 #     # === VALIDATION PHASE ===
 #     validate_import(client, table_name, branch_name, namespace)

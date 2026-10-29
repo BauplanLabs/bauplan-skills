@@ -43,9 +43,9 @@ Creates data pipeline projects with Python and SQL models. Handles project setup
 
 ### bauplan-safe-ingestion
 
-Ingests data from S3 using the Write-Audit-Publish (WAP) pattern: import on an isolated branch, validate, then merge to main. Supports three validation paths depending on how well the user knows the data.
+Ingests data from object storage using the Write-Audit-Publish (WAP) pattern: import on an isolated branch, validate, then merge to main. Supports three validation paths depending on how well the user knows the data.
 
-**When to use:** Loading new data from S3 into the lakehouse.
+**When to use:** Loading new data from S3 or GCS into the lakehouse.
 
 ### bauplan-debug-and-fix-pipeline
 
@@ -110,7 +110,7 @@ plugins/bauplan/
       SKILL.md               # Pipeline creation skill
       examples.md            # Advanced pipeline examples
     bauplan-safe-ingestion/
-      SKILL.md               # S3 ingestion with WAP pattern
+      SKILL.md               # Object storage ingestion with WAP pattern
     bauplan-debug-and-fix-pipeline/
       SKILL.md               # Pipeline debugging skill
     bauplan-data-quality-checks/

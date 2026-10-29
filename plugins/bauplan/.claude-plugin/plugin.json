@@ -1,6 +1,6 @@
 {
   "name": "bauplan",
-  "description": "Skills for working with Bauplan data lakehouses. Includes data exploration, pipeline creation, safe S3 ingestion, pipeline debugging, data assessment, quality check generation, typed SDK migration, and DAG optimization.",
+  "description": "Skills for working with Bauplan data lakehouses. Includes data exploration, pipeline creation, safe ingestion from object storage, pipeline debugging, data assessment, quality check generation, typed SDK migration, and DAG optimization.",
   "author": {
     "name": "Bauplan Labs",
     "email": "info@bauplanlabs.com"

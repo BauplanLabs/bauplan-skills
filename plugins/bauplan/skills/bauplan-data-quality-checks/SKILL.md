@@ -394,7 +394,7 @@ Validation logic is embedded directly in the WAP (Write-Audit-Publish) script, b
 
 ```python
 # === IMPORT PHASE ===
-client.import_data(table=table_name, search_uri=s3_path, branch=branch_name, ...)
+client.import_data(table=table_name, search_uri=SOURCE_URI, branch=branch_name, ...)
 
 # === VALIDATION PHASE ===    ← checks go here
 validate_import(client, table_name, branch_name, namespace)

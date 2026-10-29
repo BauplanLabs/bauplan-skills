@@ -9,7 +9,7 @@
   "plugins": [
     {
       "name": "bauplan",
-      "description": "Skills for working with Bauplan data lakehouses: explore data, build pipelines, ingest from S3, debug failures, assess data feasibility, generate quality checks, and optimize DAGs",
+      "description": "Skills for working with Bauplan data lakehouses: explore data, build pipelines, ingest from object storage, debug failures, assess data feasibility, generate quality checks, and optimize DAGs",
       "author": {
         "name": "Bauplan Labs",
         "email": "info@bauplanlabs.com"
