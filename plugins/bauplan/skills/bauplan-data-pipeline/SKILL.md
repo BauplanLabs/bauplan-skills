@@ -227,9 +227,6 @@ bauplan table get <namespace>.<output_table>
 bauplan query "SELECT * FROM <namespace>.<output_table> LIMIT 5"
 ```
 
-### Strict Mode
-Strict mode is on by default: a failing expectation fails the run. There is no `--strict` flag to pass. `--no-strict` is a bare flag that disables enforcement for the whole run; the SDK equivalent is `client.run(..., strict=False)`, and `strict`, `cache`, and `transaction` all default to `True`.
-
 ## Materialization Checklist
 After writing models, verify each model has the correct `materialization_strategy`:
 
