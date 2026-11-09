@@ -167,7 +167,7 @@ Not every table needs all six dimensions. Pick the ones that matter for this tab
 
 ### Every Check Fails the Run
 
-Strict mode is on by default: a `False` fails the job and nothing is materialized. Before writing a check, decide whether a failure is worth stopping the run.
+A `False` fails the job and nothing is materialized. Before writing a check, decide whether a failure is worth stopping the run.
 
 **Worth stopping on**: downstream use is unsafe. Examples: missing primary key, zero rows, wrong schema, broken join column, negative values in a revenue column that gets summed. Write it as an expectation.
 
@@ -230,7 +230,6 @@ Key mechanics:
 - `Model` accepts only `name`, `projection_schema`, and literal `filter`; `$param` templating is supported. Run parameters use `Annotated[<Python type>, bauplan.Parameter("name")]`, matching the YAML parameter type.
 - Expectations run as DAG nodes during `bauplan run`, after the model they depend on completes.
 - They receive the model's output as an Arrow table — same as a downstream model would.
-- `True` = pass, `False` = fail. Strict mode is on by default, so a `False` fails the run; `--no-strict` (`strict=False` in the SDK) disables it for the whole run, not per check.
 
 ### Using bauplan.standard_expectations
 
@@ -443,7 +442,7 @@ def validate_import(client, table_name, branch, namespace="bauplan"):
 | Input            | Arrow table via `bauplan.Model()` | SDK queries via `client.query()` |
 | Execution        | Automatic during `bauplan run`    | Called explicitly in script      |
 | Data access      | In-memory Arrow table             | SQL queries against branch       |
-| Failure handling | Return `False` (strict mode)      | Raise to block the merge         |
+| Failure handling | Return `False`                    | Raise to block the merge         |
 | Environment      | Containerized per-function        | Local Python process             |
 
 ### Query Patterns by Dimension
